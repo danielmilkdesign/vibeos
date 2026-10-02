@@ -1,0 +1,102 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum LeadStatus {
+  LEAD_NOVO
+  DIAGNOSTICO_GERADO
+  ABORDADO_EMAIL
+  ABORDADO_WHATSAPP
+  REUNIAO_AGENDADA
+  PROPOSTA_ENVIADA
+  FECHADO
+  PERDIDO
+}
+
+enum NichoEnum {
+  ESTETICA
+  ODONTOLOGIA
+  PERSONAL_TRAINER
+  MEDICINA
+  ADVOCACIA
+  OUTROS
+}
+
+enum UrgenciaEnum {
+  CRITICA
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+model Lead {
+  id              String        @id @default(uuid())
+  nomeEmpresa     String
+  nicho           NichoEnum
+  localizacao     String
+  linkBio         String?
+  status          LeadStatus    @default(LEAD_NOVO)
+  urgencia        UrgenciaEnum  @default(ALTA)
+  
+  authorityScore  Int           @default(0)
+  trafegoOrganico Int           @default(0)
+  palavrasChave   Int           @default(0)
+  percentSocial   Float         @default(100.0)
+  diagnosticoSeo  String?
+
+  nomeDecisor     String?
+  cargoDecisor    String?
+  emailDecisor    String?
+  phoneWhatsapp   String?
+  instagramUrl    String?
+
+  interacoes      Interacao[]
+  projetos        Projeto[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Interacao {
+  id          String   @id @default(uuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tipo        String   // EMAIL, WHATSAPP, REUNIAO, NOTA
+  conteudo    String
+  createdAt   DateTime @default(now())
+}
+
+enum TipoProjeto {
+  SITE_BASE
+  SITE_AGENDAMENTO
+  SISTEMA_SOB_MEDIDA
+}
+
+enum StatusProjeto {
+  BRIEFING
+  COPY_DESIGN
+  DESENVOLVIMENTO
+  INTEGRACAO_WHATSAPP
+  REVISAO_CLIENTE
+  ENTREGUE
+}
+
+model Projeto {
+  id              String        @id @default(uuid())
+  leadId          String
+  lead            Lead          @relation(fields: [leadId], references: [id])
+  tipo            TipoProjeto
+  status          StatusProjeto @default(BRIEFING)
+  valorTotal      Float
+  valorSinal      Float
+  prazoDias       Int           @default(7)
+  dataInicio      DateTime      @default(now())
+  dataPrevisao    DateTime
+  checklistNormas Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
