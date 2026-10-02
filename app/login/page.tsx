@@ -8,7 +8,7 @@ import { UserRole } from '../../types/crm';
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState('daniel@vibedesign.com.br');
+  const [email, setEmail] = useState('danielleitedesign@gmail.com');
   const [password, setPassword] = useState('vibe2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -38,11 +38,11 @@ export default function LoginPage() {
     setError('');
     if (selectedFounder === 'daniel') {
       setSelectedFounder('victor');
-      setEmail('victor@vibedesign.com.br');
+      setEmail('victorbelichar@gmail.com');
       setPassword('vibe2026');
     } else {
       setSelectedFounder('daniel');
-      setEmail('daniel@vibedesign.com.br');
+      setEmail('danielleitedesign@gmail.com');
       setPassword('vibe2026');
     }
   };

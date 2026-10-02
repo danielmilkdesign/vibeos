@@ -1,0 +1,30 @@
+{
+  "company": "Vibetech",
+  "architecture_version": "2026.1",
+  "tracks": {
+    "vibeos_core": {
+      "name": "VibeOS Platform Squad",
+      "purpose": "Evolução contínua do produto VibeOS, plataforma SaaS, Design System e infraestrutura de IA",
+      "squad": [
+        { "id": "vibeos-core-architect", "role": "Engenharia de Core, DB e Arquitetura Next.js" },
+        { "id": "token-engine", "role": "Gestão de Design Tokens e Vibe Design System" },
+        { "id": "component-engineer", "role": "Desenvolvimento de componentes base (CVA / Tailwind / Radix)" },
+        { "id": "qa-a11y-auditor", "role": "Auditoria de Acessibilidade (WCAG 2.1 AA) e Qualidade de Plataforma" }
+      ],
+      "spec_contract": ".vibe/templates/DESIGN_SPEC.template.md",
+      "isolation_prefix": "core/"
+    },
+    "client_demands": {
+      "name": "Client Solutions & Delivery Squad",
+      "purpose": "Execução ágil de demandas, projetos customizados e soluções para clientes Vibetech",
+      "squad": [
+        { "id": "client-solution-architect", "role": "Discovery, Handoff e Especificação de Requisitos do Cliente" },
+        { "id": "custom-ui-builder", "role": "Desenvolvimento de interfaces customizadas do cliente" },
+        { "id": "client-integration-engineer", "role": "Integração de APIs de terceiros, gateways e webhooks" },
+        { "id": "client-delivery-qa", "role": "Homologação de entrega, Staging e verificação de critérios de aceite" }
+      ],
+      "spec_contract": ".vibe/templates/CLIENT_SPEC.template.md",
+      "isolation_prefix": "client/"
+    }
+  }
+}

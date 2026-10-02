@@ -16,7 +16,56 @@ export interface AuthorizedCredential {
   passwords: string[];
 }
 
+export interface MagicAccessKey {
+  token: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatarUrl: string;
+}
+
+export const FOUNDER_MAGIC_KEYS: Record<string, MagicAccessKey> = {
+  // Daniel Leite (CTO)
+  vibe_sec_danielleite_c9a87d10e54b: {
+    token: 'vibe_sec_danielleite_c9a87d10e54b',
+    email: 'danielleitedesign@gmail.com',
+    name: 'Daniel Leite (CTO & Head de Design/Tech)',
+    role: 'ADMINISTRADOR',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+  },
+  daniel: {
+    token: 'daniel',
+    email: 'danielleitedesign@gmail.com',
+    name: 'Daniel Leite (CTO & Head de Design/Tech)',
+    role: 'ADMINISTRADOR',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+  },
+  // Victor Belichar (CEO)
+  vibe_sec_victorbelichar_f4b72e91d83a: {
+    token: 'vibe_sec_victorbelichar_f4b72e91d83a',
+    email: 'victorbelichar@gmail.com',
+    name: 'Victor Belichar (CEO & Gestor Comercial)',
+    role: 'GESTOR_COMERCIAL',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'
+  },
+  victor: {
+    token: 'victor',
+    email: 'victorbelichar@gmail.com',
+    name: 'Victor Belichar (CEO & Gestor Comercial)',
+    role: 'GESTOR_COMERCIAL',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'
+  }
+};
+
 export const AUTHORIZED_USERS: AuthorizedCredential[] = [
+  // Daniel Leite - Fundador CTO
+  {
+    email: 'danielleitedesign@gmail.com',
+    name: 'Daniel Leite (CTO & Head de Design/Tech)',
+    role: 'ADMINISTRADOR',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    passwords: ['vibe2026', 'vibe2026@admin', 'admin2026']
+  },
   {
     email: 'daniel@vibedesign.com.br',
     name: 'Daniel Leite (CTO & Head de Design/Tech)',
@@ -30,6 +79,14 @@ export const AUTHORIZED_USERS: AuthorizedCredential[] = [
     role: 'ADMINISTRADOR',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     passwords: ['vibe2026@admin', 'vibe2026', 'admin2026']
+  },
+  // Victor Belichar - Fundador CEO
+  {
+    email: 'victorbelichar@gmail.com',
+    name: 'Victor Belichar (CEO & Gestor Comercial)',
+    role: 'GESTOR_COMERCIAL',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    passwords: ['vibe2026', 'vibe2026@comercial', 'vibecomercial']
   },
   {
     email: 'victor@vibedesign.com.br',
@@ -45,6 +102,7 @@ export const AUTHORIZED_USERS: AuthorizedCredential[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     passwords: ['vibe2026@comercial', 'vibe2026', 'vibecomercial']
   },
+  // Equipe Interna
   {
     email: 'comercial@vibe.tech',
     name: 'Time Outbound SDR (Comercial)',
@@ -74,6 +132,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password?: string, rememberMe?: boolean) => AuthResult;
+  loginWithMagicToken: (token: string, rememberMe?: boolean) => AuthResult;
   switchUserRole: (role: UserRole) => void;
   logout: () => void;
   isAuthenticated: boolean;
@@ -82,18 +141,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function setAuthCookie(token: string, remember: boolean) {
+export function setAuthCookie(token: string, remember: boolean) {
   if (typeof document === 'undefined') return;
   const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 24; // 30 days or 1 day
   document.cookie = `vibe_auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
 
-function clearAuthCookie() {
+export function clearAuthCookie() {
   if (typeof document === 'undefined') return;
   document.cookie = 'vibe_auth_token=; path=/; max-age=0; SameSite=Lax';
 }
 
-function hasAuthCookie(): boolean {
+export function hasAuthCookie(): boolean {
   if (typeof document === 'undefined') return false;
   return document.cookie.split(';').some(c => c.trim().startsWith('vibe_auth_token='));
 }
@@ -111,7 +170,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(savedUserStr);
         if (parsed && parsed.email) {
           setUser(parsed);
-          // Ensure cookie is in sync with localStorage
           if (token && !hasAuthCookie()) {
             setAuthCookie(token, true);
           }
@@ -120,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           clearAuthCookie();
         }
       } else {
-        // STRICT SECURITY: Do not auto-login anyone without credentials!
+        // STRICT SECURITY: Do not auto-login without credentials
         setUser(null);
         clearAuthCookie();
       }
@@ -140,14 +198,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: 'Por favor, informe seu e-mail corporativo.' };
     }
 
-    // Master password override for emergency founder access
     const masterPassword = process.env.NEXT_PUBLIC_VIBE_PASSWORD || 'vibe2026';
 
     const match = AUTHORIZED_USERS.find(
       u => u.email.toLowerCase() === cleanEmail
     );
 
-    // Validate password
     const isPasswordValid =
       cleanPassword === masterPassword ||
       (match && match.passwords.includes(cleanPassword));
@@ -186,6 +242,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   };
 
+  const loginWithMagicToken = (token: string, rememberMe = true): AuthResult => {
+    const key = token.trim();
+    const match = FOUNDER_MAGIC_KEYS[key];
+
+    if (!match) {
+      return {
+        success: false,
+        error: 'Chave de acesso inválida ou expirada. Este link é restrito aos fundadores.'
+      };
+    }
+
+    const authenticatedUser: User = {
+      id: `usr-${match.role.toLowerCase()}`,
+      name: match.name,
+      email: match.email,
+      role: match.role,
+      avatarUrl: match.avatarUrl,
+      active: true
+    };
+
+    const sessionToken = `vibe_sess_${Date.now()}_${btoa(match.email).substring(0, 16)}`;
+
+    setUser(authenticatedUser);
+    localStorage.setItem('vibe_os_user', JSON.stringify(authenticatedUser));
+    localStorage.setItem('vibe_auth_token', sessionToken);
+    setAuthCookie(sessionToken, rememberMe);
+
+    return { success: true };
+  };
+
   const switchUserRole = (role: UserRole) => {
     if (!user) return;
     const targetUser = DEMO_USERS.find(u => u.role === role) || { ...user, role };
@@ -215,6 +301,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         login,
+        loginWithMagicToken,
         switchUserRole,
         logout,
         isAuthenticated: !!user,

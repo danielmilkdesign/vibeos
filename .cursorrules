@@ -1,0 +1,8 @@
+# REGRAS DO VIBE OS - PRODUCT DESIGN & DESIGN ENGINEERING
+
+- Siga estritamente o guia de regras em [SYSTEM_RULES.md](file:///D:/vibe-os/SYSTEM_RULES.md).
+- Zero magic numbers: use apenas tokens de design e utility classes do Tailwind.
+- Use CVA (Class Variance Authority) em todos os componentes flexíveis de UI.
+- Garanta suporte WCAG 2.1 AA (`focus-visible`, atributos ARIA semânticos).
+- Cada novo componente deve possuir arquivos `.tsx`, `.types.ts` e `.stories.tsx`.
+- Antes de gerar código de componentes complexos, crie ou siga a `DESIGN_SPEC.md` e o checklist em `tasks.md`.

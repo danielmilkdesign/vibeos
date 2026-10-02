@@ -4,10 +4,12 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow static assets, next internals, and webhook endpoints
+  // Allow static assets, next internals, auth endpoints, and magic access landing
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/webhook') ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/acesso') ||
     pathname.includes('.') ||
     pathname === '/favicon.ico'
   ) {

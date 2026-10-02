@@ -14,15 +14,15 @@ export default function AppLayoutWrapper({
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
-  const isLoginPage = pathname === '/login';
+  const isPublicPage = pathname === '/login' || pathname.startsWith('/acesso');
 
   useEffect(() => {
-    if (!loading && !isAuthenticated && !isLoginPage) {
+    if (!loading && !isAuthenticated && !isPublicPage) {
       router.replace('/login');
     }
-  }, [loading, isAuthenticated, isLoginPage, router]);
+  }, [loading, isAuthenticated, isPublicPage, router]);
 
-  if (isLoginPage) {
+  if (isPublicPage) {
     return <main className="min-h-screen w-full bg-[#070B14]">{children}</main>;
   }
 
