@@ -31,65 +31,7 @@ interface Tarefa {
   diasAtraso?: number;
 }
 
-const TAREFAS_INICIAIS: Tarefa[] = [
-  {
-    id: 'tar-1',
-    titulo: 'Revisão de Copies para Campanha Meta Ads',
-    projeto: 'Lançamento Campanha Outono',
-    cliente: 'Clínica Dra. Ana Silva',
-    responsavel: 'Lucas Silva',
-    prazo: '03/10/2026',
-    prioridade: 'ALTA',
-    status: 'EM_ANDAMENTO',
-    aguardandoCliente: false
-  },
-  {
-    id: 'tar-2',
-    titulo: 'Aprovação de Mockups da Landing Page OAB',
-    projeto: 'Módulo de Agendamento OAB',
-    cliente: 'Advocacia Lima & Associados',
-    responsavel: 'Fernanda Rocha',
-    prazo: '01/10/2026',
-    prioridade: 'ALTA',
-    status: 'AGUARDANDO_CLIENTE',
-    aguardandoCliente: true,
-    diasAtraso: 1
-  },
-  {
-    id: 'tar-3',
-    titulo: 'Configuração de Tags no Google Tag Manager',
-    projeto: 'Reformulação da Identidade e Site',
-    cliente: 'Instituto OrtoOdonto',
-    responsavel: 'Gabriel Souza',
-    prazo: '05/10/2026',
-    prioridade: 'MEDIA',
-    status: 'A_FAZER',
-    aguardandoCliente: false
-  },
-  {
-    id: 'tar-4',
-    titulo: 'Exportação do Relatório Mensal de Desempenho',
-    projeto: 'Esteira de Crescimento - Mensal',
-    cliente: 'Clínica Dra. Ana Silva',
-    responsavel: 'Lucas Silva',
-    prazo: '02/10/2026',
-    prioridade: 'MEDIA',
-    status: 'EM_REVISAO',
-    aguardandoCliente: false
-  },
-  {
-    id: 'tar-5',
-    titulo: 'Coleta de credenciais do Instagram para automação',
-    projeto: 'Aguardando Reabertura de Vagas',
-    cliente: 'Studio Fit Performance',
-    responsavel: 'Mariana Costa',
-    prazo: '28/09/2026',
-    prioridade: 'BAIXA',
-    status: 'BLOQUEADA',
-    aguardandoCliente: true,
-    diasAtraso: 4
-  }
-];
+const TAREFAS_INICIAIS: Tarefa[] = [];
 
 export default function TarefasPage() {
   const [tarefas, setTarefas] = useState<Tarefa[]>(() =>
@@ -202,8 +144,19 @@ export default function TarefasPage() {
         </div>
 
         {/* Task Cards List */}
-        <div className="space-y-3">
-          {filteredTarefas.map((t) => (
+        {filteredTarefas.length === 0 ? (
+          <div className="p-12 text-center bg-slate-950/60 rounded-2xl border border-dashed border-slate-800 space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+              <CheckSquare className="w-6 h-6" />
+            </div>
+            <h4 className="text-base font-bold text-white">Nenhuma tarefa operacional pendente</h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Todas as tarefas de projetos, aprovações de clientes e esteiras estão em dia.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredTarefas.map((t) => (
             <div
               key={t.id}
               className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
@@ -285,6 +238,7 @@ export default function TarefasPage() {
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

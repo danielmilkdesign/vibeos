@@ -204,11 +204,13 @@ export default function ProjetosPage() {
           </div>
           <div className="mt-2 flex items-baseline justify-between">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-text-primary">6.2</span>
+              <span className="text-2xl font-bold text-text-primary">
+                {projects.length > 0 ? '6.2' : '--'}
+              </span>
               <span className="text-xs text-text-secondary">dias</span>
             </div>
             <span className="px-2 py-0.5 rounded bg-success/15 text-success font-mono text-[10px] font-semibold">
-              -0.8d vs Meta
+              {projects.length > 0 ? '-0.8d vs Meta' : 'Sem dados'}
             </span>
           </div>
           <div className="mt-2 text-text-disabled font-mono text-[11px]">
@@ -229,11 +231,15 @@ export default function ProjetosPage() {
               {String(criticalCount).padStart(2, '0')}
             </span>
             <span className="px-2 py-0.5 rounded bg-warning/20 text-warning font-mono text-[10px] font-semibold">
-              Aguardando Cliente
+              {criticalCount > 0 ? 'Aguardando Cliente' : 'Tudo Operacional'}
             </span>
           </div>
           <div className="mt-2 text-text-disabled font-mono text-[11px]">
-            Tempo parado: <strong className="text-warning">38 horas úteis</strong>
+            {criticalCount > 0 ? (
+              <span>Projetos com atenção requerida</span>
+            ) : (
+              <span className="text-success font-medium">Nenhum gargalo ativo</span>
+            )}
           </div>
         </div>
 
@@ -246,13 +252,15 @@ export default function ProjetosPage() {
             </div>
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-text-primary">94.2%</span>
+            <span className="text-2xl font-bold text-text-primary">
+              {projects.length > 0 ? `${Math.round(((projects.length - criticalCount) / projects.length) * 100)}%` : '100%'}
+            </span>
             <span className="px-2 py-0.5 rounded bg-success/15 text-success font-mono text-[10px] font-semibold">
-              +2.1% m/m
+              Meta 95%
             </span>
           </div>
           <div className="mt-2 text-text-disabled font-mono text-[11px]">
-            Últimos 90 dias: <strong className="text-text-primary">32/34 entregues</strong>
+            Histórico: <strong className="text-text-primary">{projects.filter(p => p.status === 'CONCLUIDO').length}/{projects.length} entregues</strong>
           </div>
         </div>
       </div>
@@ -271,7 +279,24 @@ export default function ProjetosPage() {
           </span>
         </div>
 
-        <div className="flex flex-col gap-4">
+        {filteredProjects.length === 0 ? (
+          <div className="p-12 rounded-xl bg-surface-container-low border border-dashed border-border-subtle text-center flex flex-col items-center justify-center gap-3">
+            <Layers className="w-10 h-10 text-text-disabled" />
+            <div className="space-y-1">
+              <h3 className="text-text-primary font-bold text-base">Nenhum projeto em execução</h3>
+              <p className="text-text-secondary text-xs max-w-sm">
+                Inicie novos projetos fechados no pipeline ou crie ordens operacionais diretamente.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsNewProjectModalOpen(true)}
+              className="mt-2 px-4 py-2 bg-primary hover:bg-primary-hover text-surface-container-lowest font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
+            >
+              <PlusCircle className="w-4 h-4" /> Criar Primeiro Projeto
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
           {filteredProjects.map((proj) => {
             const isCritical = proj.riskLevel === 'CRITICO' || proj.riskLevel === 'ATENCAO';
             const initials = proj.nomeEmpresa
@@ -453,6 +478,7 @@ export default function ProjetosPage() {
             );
           })}
         </div>
+      )}
       </div>
 
       {/* New Project Modal */}

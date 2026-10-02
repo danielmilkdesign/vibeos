@@ -90,72 +90,90 @@ export default function ContratosPage() {
       </div>
 
       {/* Contracts List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {contracts.map((c) => (
-          <div
-            key={c.id}
-            className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-emerald-800/60 transition-all flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-cyan-400 font-bold">{c.contractNumber}</span>
-                <span
-                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold border ${
-                    c.status === 'RENOVACAO_PROXIMA'
-                      ? 'bg-amber-950 text-amber-400 border-amber-800'
-                      : 'bg-emerald-950 text-emerald-400 border-emerald-800'
-                  }`}
-                >
-                  {c.status.replace('_', ' ')}
-                </span>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-lg text-slate-100">{c.companyName}</h3>
-                <p className="text-xs text-slate-400">Plano: {c.offerName} • Cliente: {c.clientName}</p>
-              </div>
-
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 font-mono text-xs">
-                <div className="flex justify-between text-slate-300">
-                  <span>Mensalidade Recorrente:</span>
-                  <span className="text-emerald-400 font-extrabold text-sm">R$ {c.recurringValue.toLocaleString('pt-BR')}/mês</span>
-                </div>
-                <div className="flex justify-between text-slate-400 text-[11px]">
-                  <span>Vencimento do Faturamento:</span>
-                  <span className="text-slate-200">Dia {c.dueDay} de cada mês</span>
-                </div>
-                <div className="flex justify-between text-slate-400 text-[11px]">
-                  <span>Renovação do Contrato:</span>
-                  <span className="text-slate-200">{c.renewalDate}</span>
-                </div>
-              </div>
-
-              {/* Delivery Limit Tracker */}
-              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-slate-400">Franquia Mensal de Entregas:</span>
-                  <span className="text-cyan-400 font-bold">{c.deliveriesUsed} de {c.deliveryLimit} utilizadas</span>
-                </div>
-                <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
-                  <div
-                    className="h-full bg-cyan-500 rounded-full transition-all"
-                    style={{ width: `${(c.deliveriesUsed / c.deliveryLimit) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-              <button
-                onClick={() => handleIncrementDelivery(c.id)}
-                className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" /> Registrar Entrega de Arte/Conteúdo
-              </button>
-            </div>
+      {contracts.length === 0 ? (
+        <div className="bg-slate-900/60 border border-dashed border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
+          <FileCheck className="w-10 h-10 text-slate-600" />
+          <div className="space-y-1">
+            <h3 className="text-slate-200 font-bold text-base">Nenhum contrato ativo</h3>
+            <p className="text-slate-400 text-xs max-w-sm">
+              Cadastre contratos com faturamento recorrente (MRR) para monitorar vencimentos e franquias de entregas.
+            </p>
           </div>
-        ))}
-      </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-emerald-950"
+          >
+            <Plus className="w-4 h-4" /> Cadastrar Primeiro Contrato
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {contracts.map((c) => (
+            <div
+              key={c.id}
+              className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-emerald-800/60 transition-all flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs text-cyan-400 font-bold">{c.contractNumber}</span>
+                  <span
+                    className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold border ${
+                      c.status === 'RENOVACAO_PROXIMA'
+                        ? 'bg-amber-950 text-amber-400 border-amber-800'
+                        : 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                    }`}
+                  >
+                    {c.status.replace('_', ' ')}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-lg text-slate-100">{c.companyName}</h3>
+                  <p className="text-xs text-slate-400">Plano: {c.offerName} • Cliente: {c.clientName}</p>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 font-mono text-xs">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Mensalidade Recorrente:</span>
+                    <span className="text-emerald-400 font-extrabold text-sm">R$ {c.recurringValue.toLocaleString('pt-BR')}/mês</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400 text-[11px]">
+                    <span>Vencimento do Faturamento:</span>
+                    <span className="text-slate-200">Dia {c.dueDay} de cada mês</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400 text-[11px]">
+                    <span>Renovação do Contrato:</span>
+                    <span className="text-slate-200">{c.renewalDate}</span>
+                  </div>
+                </div>
+
+                {/* Delivery Limit Tracker */}
+                <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-400">Franquia Mensal de Entregas:</span>
+                    <span className="text-cyan-400 font-bold">{c.deliveriesUsed} de {c.deliveryLimit} utilizadas</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                    <div
+                      className="h-full bg-cyan-500 rounded-full transition-all"
+                      style={{ width: `${(c.deliveriesUsed / c.deliveryLimit) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                <button
+                  onClick={() => handleIncrementDelivery(c.id)}
+                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Registrar Entrega de Arte/Conteúdo
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* New Contract Modal */}
       {isModalOpen && (

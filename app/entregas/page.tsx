@@ -30,51 +30,7 @@ interface Entrega {
   comentarioCliente?: string;
 }
 
-const ENTREGAS_INICIAIS: Entrega[] = [
-  {
-    id: 'ent-1',
-    cliente: 'Clínica Dra. Ana Silva',
-    titulo: 'Vídeo Reels: 5 Mitos sobre Harmonização Facial',
-    tipo: 'REELS_VIDEO',
-    ciclo: 'Outubro 2026',
-    responsavel: 'Lucas Silva',
-    prazo: '04/10/2026',
-    status: 'APROVACAO_CLIENTE',
-    arquivoUrl: 'https://vibeos.media/preview-reels-1.mp4',
-    comentarioCliente: 'Aguardando validação do tom de voz pelo WhatsApp'
-  },
-  {
-    id: 'ent-2',
-    cliente: 'Instituto OrtoOdonto',
-    titulo: 'Carrossel Educativo: Cuidados Pós-Implante',
-    tipo: 'CARROSSEL',
-    ciclo: 'Outubro 2026',
-    responsavel: 'Fernanda Rocha',
-    prazo: '06/10/2026',
-    status: 'EM_PRODUCAO'
-  },
-  {
-    id: 'ent-3',
-    cliente: 'Advocacia Lima & Associados',
-    titulo: 'Artigo SEO: Direitos Trabalhistas em Contratos PJ',
-    tipo: 'ARTIGO_SEO',
-    ciclo: 'Outubro 2026',
-    responsavel: 'Gabriel Souza',
-    prazo: '01/10/2026',
-    status: 'APROVADA',
-    arquivoUrl: 'https://vibeos.media/artigo-pj.pdf'
-  },
-  {
-    id: 'ent-4',
-    cliente: 'Studio Fit Performance',
-    titulo: 'Banner de Promoção Semanal - Stories',
-    tipo: 'ARTWORK',
-    ciclo: 'Setembro 2026',
-    responsavel: 'Mariana Costa',
-    prazo: '29/09/2026',
-    status: 'PUBLICADA'
-  }
-];
+const ENTREGAS_INICIAIS: Entrega[] = [];
 
 export default function EntregasPage() {
   const [entregas, setEntregas] = useState<Entrega[]>(() =>
@@ -132,17 +88,41 @@ export default function EntregasPage() {
       {/* Cycle usage progress card */}
       <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="space-y-1 w-full md:w-auto">
-          <h3 className="font-extrabold text-slate-100 text-sm">Utilização de Entregas do Ciclo de Outubro</h3>
-          <p className="text-xs text-slate-400">Total contratado na carteira ativa: 36 entregas/mês</p>
+          <h3 className="font-extrabold text-slate-100 text-sm">Utilização de Entregas do Ciclo Operacional</h3>
+          <p className="text-xs text-slate-400">Total de entregas cadastradas: {entregas.length}</p>
         </div>
 
         <div className="w-full md:w-72 space-y-1.5">
           <div className="flex justify-between text-xs text-slate-300 font-mono">
-            <span>24 de 36 entregas</span>
-            <span className="text-cyan-400 font-bold">66% concluído</span>
+            <span>
+              {entregas.filter((e) => e.status === 'APROVADA' || e.status === 'PUBLICADA').length} de {entregas.length} concluídas
+            </span>
+            <span className="text-cyan-400 font-bold">
+              {entregas.length > 0
+                ? Math.round(
+                    (entregas.filter((e) => e.status === 'APROVADA' || e.status === 'PUBLICADA').length /
+                      entregas.length) *
+                      100
+                  )
+                : 0}
+              %
+            </span>
           </div>
           <div className="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
-            <div className="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-full w-[66%]" />
+            <div
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-full transition-all"
+              style={{
+                width: `${
+                  entregas.length > 0
+                    ? Math.round(
+                        (entregas.filter((e) => e.status === 'APROVADA' || e.status === 'PUBLICADA').length /
+                          entregas.length) *
+                          100
+                      )
+                    : 0
+                }%`
+              }}
+            />
           </div>
         </div>
       </div>
@@ -178,8 +158,19 @@ export default function EntregasPage() {
         </div>
 
         {/* Deliverables Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredEntregas.map((item) => (
+        {filteredEntregas.length === 0 ? (
+          <div className="p-12 text-center bg-slate-950/60 rounded-2xl border border-dashed border-slate-800 space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+              <PackageCheck className="w-6 h-6" />
+            </div>
+            <h4 className="text-base font-bold text-white">Nenhuma entrega cadastrada na esteira</h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Crie entregas mensais (artes, carrosséis, vídeos ou landing pages) vinculadas aos contratos reais.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredEntregas.map((item) => (
             <div
               key={item.id}
               className="bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 space-y-4 transition-all"
@@ -226,6 +217,7 @@ export default function EntregasPage() {
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

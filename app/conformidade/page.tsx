@@ -75,8 +75,25 @@ export default function ConformidadePage() {
       </div>
 
       {/* Compliance Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {items.map((item) => {
+      {items.length === 0 ? (
+        <div className="bg-slate-900/60 border border-dashed border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
+          <ShieldCheck className="w-10 h-10 text-slate-600" />
+          <div className="space-y-1">
+            <h3 className="text-slate-200 font-bold text-base">Nenhuma auditoria iniciada</h3>
+            <p className="text-slate-400 text-xs max-w-sm">
+              Inicie checklists de auditoria ética e regulatória (CFO, CRM, OAB, LGPD) para cada projeto.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="mt-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/25"
+          >
+            <Plus className="w-4 h-4" /> Nova Auditoria de Projeto
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {items.map((item) => {
           const isComplete =
             item.identityVerified &&
             item.socialProofReviewed &&
@@ -168,7 +185,8 @@ export default function ConformidadePage() {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* New Compliance Audit Modal */}
       {isModalOpen && (

@@ -105,69 +105,87 @@ export default function PropostasPage() {
       </div>
 
       {/* Proposals Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {proposals.map((p) => (
-          <div
-            key={p.id}
-            className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 hover:border-cyan-800/60 transition-all flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-cyan-400 font-bold">{p.proposalNumber}</span>
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
-                    p.status === 'APROVADA'
-                      ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
-                      : p.status === 'RECUSADA'
-                      ? 'bg-rose-950 text-rose-400 border-rose-800'
-                      : 'bg-cyan-950 text-cyan-400 border-cyan-800'
-                  }`}
-                >
-                  {p.status}
-                </span>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-base text-slate-100">{p.clientName}</h3>
-                <p className="text-xs text-slate-400">{p.offerTitle}</p>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs space-y-1">
-                <div className="flex justify-between text-slate-300">
-                  <span>Setup Inicial:</span>
-                  <span className="text-slate-100 font-bold">R$ {p.setupValue.toLocaleString('pt-BR')}</span>
-                </div>
-                <div className="flex justify-between text-cyan-400">
-                  <span>Recorrência Mensal:</span>
-                  <span className="font-bold">R$ {p.recurringValue.toLocaleString('pt-BR')}/mês</span>
-                </div>
-              </div>
-
-              <p className="text-slate-400 text-xs line-clamp-2 italic">
-                "{p.scopeText}"
-              </p>
-            </div>
-
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-              <button
-                onClick={() => setSelectedProposal(p)}
-                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
-              >
-                Visualizar
-              </button>
-
-              {p.status !== 'APROVADA' && (
-                <button
-                  onClick={() => handleUpdateStatus(p.id, 'APROVADA')}
-                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Aprovar
-                </button>
-              )}
-            </div>
+      {proposals.length === 0 ? (
+        <div className="bg-slate-900/60 border border-dashed border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
+          <FileText className="w-10 h-10 text-slate-600" />
+          <div className="space-y-1">
+            <h3 className="text-slate-200 font-bold text-base">Nenhuma proposta emitida</h3>
+            <p className="text-slate-400 text-xs max-w-sm">
+              Gere orçamentos e propostas comerciais formais para enviar a clientes em negociação.
+            </p>
           </div>
-        ))}
-      </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="mt-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-600/25"
+          >
+            <Plus className="w-4 h-4" /> Emitir Primeira Proposta
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {proposals.map((p) => (
+            <div
+              key={p.id}
+              className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4 hover:border-cyan-800/60 transition-all flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs text-cyan-400 font-bold">{p.proposalNumber}</span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                      p.status === 'APROVADA'
+                        ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                        : p.status === 'RECUSADA'
+                        ? 'bg-rose-950 text-rose-400 border-rose-800'
+                        : 'bg-cyan-950 text-cyan-400 border-cyan-800'
+                    }`}
+                  >
+                    {p.status}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-base text-slate-100">{p.clientName}</h3>
+                  <p className="text-xs text-slate-400">{p.offerTitle}</p>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs space-y-1">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Setup Inicial:</span>
+                    <span className="text-slate-100 font-bold">R$ {p.setupValue.toLocaleString('pt-BR')}</span>
+                  </div>
+                  <div className="flex justify-between text-cyan-400">
+                    <span>Recorrência Mensal:</span>
+                    <span className="font-bold">R$ {p.recurringValue.toLocaleString('pt-BR')}/mês</span>
+                  </div>
+                </div>
+
+                <p className="text-slate-400 text-xs line-clamp-2 italic">
+                  "{p.scopeText}"
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                <button
+                  onClick={() => setSelectedProposal(p)}
+                  className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
+                >
+                  Visualizar
+                </button>
+
+                {p.status !== 'APROVADA' && (
+                  <button
+                    onClick={() => handleUpdateStatus(p.id, 'APROVADA')}
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Aprovar
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* New Proposal Modal */}
       {isModalOpen && (

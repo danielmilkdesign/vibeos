@@ -40,22 +40,42 @@ export default function EmpresaDetailPage() {
   const [activeTab, setActiveTab] = useState<'VISAO_GERAL' | 'OPORTUNIDADES' | 'PROPOSTAS' | 'PROJETOS' | 'CONTRATOS'>('VISAO_GERAL');
 
   const companies = getStoredData<Company[]>('vibe_companies', INITIAL_COMPANIES);
-  const foundCompany = companies.find(e => e.id === id) || INITIAL_COMPANIES[0];
+  const foundCompany = companies.find((e) => e.id === id);
+
+  if (!foundCompany) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto text-center py-20 space-y-4">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-[#0D1422] border border-[#1E293B] flex items-center justify-center text-[#64748B]">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-white">Empresa não encontrada</h2>
+        <p className="text-sm text-[#94A3B8]">A empresa solicitada não foi localizada no sistema ou ainda não foi cadastrada.</p>
+        <Link
+          href="/empresas"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#06B6D4] text-slate-950 font-bold text-xs hover:bg-[#0891B2] transition-all"
+        >
+          ← Voltar para Lista de Empresas
+        </Link>
+      </div>
+    );
+  }
 
   const opportunities = getStoredData<Opportunity[]>('vibe_opps', INITIAL_OPPORTUNITIES).filter(
-    o => o.companyId === id || o.companyName.toLowerCase().includes(foundCompany.name.toLowerCase())
+    (o) => o.companyId === id || o.companyName.toLowerCase().includes(foundCompany.name.toLowerCase())
   );
 
   const projects = getStoredData<Project[]>('vibe_projects', INITIAL_PROJECTS_FULL).filter(
-    p => p.companyId === id || p.nomeEmpresa.toLowerCase().includes(foundCompany.name.toLowerCase())
+    (p) => p.companyId === id || p.nomeEmpresa.toLowerCase().includes(foundCompany.name.toLowerCase())
   );
 
-  const contracts = getStoredData<Contract[]>('vibe_contracts', INITIAL_CONTRACTS).filter(
-    c => c.companyName.toLowerCase().includes(foundCompany.name.toLowerCase())
+  const contracts = getStoredData<Contract[]>('vibe_contracts', INITIAL_CONTRACTS).filter((c) =>
+    c.companyName.toLowerCase().includes(foundCompany.name.toLowerCase())
   );
 
   const proposals = getStoredData<Proposal[]>('vibe_proposals', INITIAL_PROPOSALS).filter(
-    p => p.clientName.toLowerCase().includes(foundCompany.name.toLowerCase()) || p.companyId === id
+    (p) => p.clientName.toLowerCase().includes(foundCompany.name.toLowerCase()) || p.companyId === id
   );
 
   const cleanPhone = (foundCompany.whatsapp || foundCompany.decisorPhone || '5592992027059').replace(/\D/g, '');

@@ -22,6 +22,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
+import { getStoredData } from '../../lib/crm-store';
+import { INITIAL_NOTIFICATIONS } from '../../lib/crm-initial-data';
 
 export default function Navbar() {
   const { user, logout, switchUserRole } = useAuth();
@@ -33,6 +35,7 @@ export default function Navbar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [notifications] = useState<any[]>(() => getStoredData('vibe_notifications', INITIAL_NOTIFICATIONS));
 
   const newRecordRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -226,7 +229,7 @@ export default function Navbar() {
         {/* Separator */}
         <div className="h-6 w-px bg-border-subtle hidden sm:block"></div>
 
-        {/* Notifications Bell with Badge '3' */}
+        {/* Notifications Bell */}
         <div className="relative" ref={notificationsRef}>
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -235,51 +238,43 @@ export default function Navbar() {
             title="Notificações operacionais"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger font-mono text-[10px] font-bold text-text-primary leading-none ring-2 ring-surface">
-              3
-            </span>
+            {notifications.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger font-mono text-[10px] font-bold text-text-primary leading-none ring-2 ring-surface">
+                {notifications.length}
+              </span>
+            )}
           </button>
 
           {notificationsOpen && (
             <div className="absolute right-0 mt-2 w-80 bg-surface-elevated border border-border-subtle rounded-xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-border-subtle">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-danger animate-ping"></span>
+                  <span className={`w-2 h-2 rounded-full ${notifications.length > 0 ? 'bg-danger animate-ping' : 'bg-success'}`}></span>
                   <span className="font-semibold text-xs text-text-primary">
-                    Avisos Críticos (3)
+                    Avisos Operacionais ({notifications.length})
                   </span>
                 </div>
                 <span className="text-[10px] font-mono text-text-disabled">Hoje</span>
               </div>
-              <div className="space-y-2 text-xs">
-                <div className="p-2.5 bg-surface rounded-lg border border-amber-500/20 flex gap-2.5 items-start">
-                  <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-warning">Proposta Prestes a Expirar</div>
-                    <p className="text-[11px] text-text-secondary mt-0.5">
-                      Proposta <strong>VIBE-2026-001</strong> (Studio FitManaus) expira em 48h.
-                    </p>
-                  </div>
+              {notifications.length === 0 ? (
+                <div className="py-6 text-center text-xs text-text-secondary">
+                  <Sparkles className="w-5 h-5 mx-auto mb-2 text-primary opacity-60" />
+                  <p className="font-medium text-text-primary">Tudo em dia!</p>
+                  <p className="text-[11px] text-text-disabled mt-0.5">Nenhuma notificação crítica no momento.</p>
                 </div>
-                <div className="p-2.5 bg-surface rounded-lg border border-rose-500/20 flex gap-2.5 items-start">
-                  <AlertTriangle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-danger">Gargalo de Materiais</div>
-                    <p className="text-[11px] text-text-secondary mt-0.5">
-                      Harmonia & Face aguarda envio de logos vetorizados e acessos ao domínio.
-                    </p>
-                  </div>
+              ) : (
+                <div className="space-y-2 text-xs">
+                  {notifications.map((n: any, idx: number) => (
+                    <div key={idx} className="p-2.5 bg-surface rounded-lg border border-border-subtle flex gap-2.5 items-start">
+                      <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-semibold text-text-primary">{n.title || n.message}</div>
+                        <p className="text-[11px] text-text-secondary mt-0.5">{n.description || n.detail}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="p-2.5 bg-surface rounded-lg border border-cyan-500/20 flex gap-2.5 items-start">
-                  <Clock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-primary">Follow-up Atrasado</div>
-                    <p className="text-[11px] text-text-secondary mt-0.5">
-                      3 follow-ups com mais de 48h sem toque no Pipeline Comercial.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>

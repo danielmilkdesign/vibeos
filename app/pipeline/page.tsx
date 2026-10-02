@@ -31,7 +31,6 @@ interface KanbanColumn {
   id: string;
   title: string;
   colorDot: string;
-  totalAcc: number;
 }
 
 export default function PipelinePage() {
@@ -55,16 +54,19 @@ export default function PipelinePage() {
   const [newValue, setNewValue] = useState(2200);
   const [newStage, setNewStage] = useState('QUALIFICADO');
 
-  const totalPipeline = opportunities.reduce((acc, o) => acc + o.estimatedValue, 0);
-  const weightedValue = Math.round(opportunities.reduce((acc, o) => acc + o.estimatedValue * (o.probability / 100), 0));
+  const totalPipeline = opportunities.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
+  const weightedValue = Math.round(opportunities.reduce((acc, o) => acc + (o.estimatedValue || 0) * ((o.probability || 0) / 100), 0));
+  const closedWonCount = opportunities.filter((o) => (o.stage as string) === 'FECHADO_GANHO' || (o.stage as string) === 'FECHADO').length;
+  const conversionRate = opportunities.length > 0 ? Math.round((closedWonCount / opportunities.length) * 100) : 0;
+  const weightedPercent = totalPipeline > 0 ? ((weightedValue / totalPipeline) * 100).toFixed(1) : '0';
 
   const columns: KanbanColumn[] = [
-    { id: 'QUALIFICADO', title: 'Qualificado', colorDot: 'bg-text-disabled', totalAcc: 3700 },
-    { id: 'ANALISE_AGENDADA', title: 'Análise Agendada', colorDot: 'bg-primary', totalAcc: 1500 },
-    { id: 'ANALISE_REALIZADA', title: 'Análise Realizada', colorDot: 'bg-surface-tint', totalAcc: 2200 },
-    { id: 'PROPOSTA_ENVIADA', title: 'Proposta Enviada', colorDot: 'bg-secondary', totalAcc: 4289 },
-    { id: 'NEGOCIACAO', title: 'Em Negociação', colorDot: 'bg-warning', totalAcc: 1890 },
-    { id: 'FECHADO_GANHO', title: 'Fechado Ganho', colorDot: 'bg-success', totalAcc: 7900 }
+    { id: 'QUALIFICADO', title: 'Qualificado', colorDot: 'bg-text-disabled' },
+    { id: 'ANALISE_AGENDADA', title: 'Análise Agendada', colorDot: 'bg-primary' },
+    { id: 'ANALISE_REALIZADA', title: 'Análise Realizada', colorDot: 'bg-surface-tint' },
+    { id: 'PROPOSTA_ENVIADA', title: 'Proposta Enviada', colorDot: 'bg-secondary' },
+    { id: 'NEGOCIACAO', title: 'Em Negociação', colorDot: 'bg-warning' },
+    { id: 'FECHADO_GANHO', title: 'Fechado Ganho', colorDot: 'bg-success' }
   ];
 
   const handleStageChangeInitiate = (oppId: string, targetStage: string) => {
@@ -175,7 +177,7 @@ export default function PipelinePage() {
                 <span className="font-mono text-base font-bold text-text-primary">
                   R$ {totalPipeline.toLocaleString('pt-BR')}
                 </span>
-                <span className="font-mono text-[11px] text-success font-semibold">+14%</span>
+                <span className="font-mono text-[11px] text-text-disabled font-semibold">{opportunities.length} deals</span>
               </div>
             </div>
 
@@ -187,7 +189,7 @@ export default function PipelinePage() {
                 <span className="font-mono text-base font-bold text-primary">
                   R$ {weightedValue.toLocaleString('pt-BR')}
                 </span>
-                <span className="font-mono text-[11px] text-text-disabled">54.1%</span>
+                <span className="font-mono text-[11px] text-text-disabled">{weightedPercent}%</span>
               </div>
             </div>
 
@@ -196,8 +198,8 @@ export default function PipelinePage() {
                 Taxa de Conversão
               </span>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="font-mono text-base font-bold text-success">28%</span>
-                <span className="font-mono text-[10px] text-text-secondary">meta 25%</span>
+                <span className="font-mono text-base font-bold text-success">{conversionRate}%</span>
+                <span className="font-mono text-[10px] text-text-secondary">{closedWonCount} ganhos</span>
               </div>
             </div>
           </div>
@@ -265,7 +267,7 @@ export default function PipelinePage() {
               if (col.id === 'FECHADO_GANHO') return stage === 'FECHADO_GANHO' || stage === 'FECHADO';
               return stage === col.id;
             });
-            const colTotal = colOpps.reduce((acc, o) => acc + o.estimatedValue, 0) || col.totalAcc;
+            const colTotal = colOpps.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
 
             return (
               <div
@@ -308,19 +310,35 @@ export default function PipelinePage() {
 
                 {/* Cards Container */}
                 <div className="flex flex-col gap-2.5 min-h-[460px]">
-                  {colOpps.map((opp) => {
-                    const isDelayed = opp.companyName.includes('FitManaus');
-                    return (
-                      <div
-                        key={opp.id}
-                        className={`group p-3.5 bg-surface rounded-xl border shadow-sm hover:bg-surface-elevated transition-all flex flex-col gap-2 cursor-grab active:cursor-grabbing ${
-                          isDelayed
-                            ? 'border-l-4 border-l-danger border-border-subtle'
-                            : col.id === 'FECHADO_GANHO'
-                            ? 'border-border-subtle opacity-95 hover:opacity-100'
-                            : 'border-border-subtle'
-                        }`}
-                      >
+                  {colOpps.length === 0 ? (
+                    <div className="py-12 px-3 text-center border border-dashed border-border-subtle rounded-xl flex flex-col items-center justify-center gap-1.5 text-text-disabled my-auto">
+                      <span className="text-xs">Nenhum deal nesta etapa</span>
+                      {col.id !== 'FECHADO_GANHO' && (
+                        <button
+                          onClick={() => {
+                            setNewStage(col.id);
+                            setIsNewOppModalOpen(true);
+                          }}
+                          className="text-[11px] text-primary hover:underline font-mono flex items-center gap-1 mt-1"
+                        >
+                          <Plus className="w-3 h-3" /> Criar oportunidade
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    colOpps.map((opp) => {
+                      const isDelayed = Boolean(opp.nextActionDate && new Date(opp.nextActionDate).getTime() < Date.now());
+                      return (
+                        <div
+                          key={opp.id}
+                          className={`group p-3.5 bg-surface rounded-xl border shadow-sm hover:bg-surface-elevated transition-all flex flex-col gap-2 cursor-grab active:cursor-grabbing ${
+                            isDelayed
+                              ? 'border-l-4 border-l-danger border-border-subtle'
+                              : col.id === 'FECHADO_GANHO'
+                              ? 'border-border-subtle opacity-95 hover:opacity-100'
+                              : 'border-border-subtle'
+                          }`}
+                        >
                         {/* Card Header Tag */}
                         <div className="flex items-start justify-between gap-1">
                           <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px] font-semibold">
@@ -428,7 +446,7 @@ export default function PipelinePage() {
                         )}
                       </div>
                     );
-                  })}
+                  }))}
                 </div>
               </div>
             );

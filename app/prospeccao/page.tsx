@@ -53,7 +53,11 @@ export default function ProspeccaoPage() {
   const [newUrgencia, setNewUrgencia] = useState<UrgenciaEnum>('CRITICA');
   const [newDiagnostico, setNewDiagnostico] = useState('');
 
-  const selectedLead = leads.find((l) => l.id === selectedLeadId) || leads[0];
+  const criticosCount = leads.filter(l => l.urgencia === 'CRITICA').length;
+  const mediasCount = leads.filter(l => l.urgencia === 'ALTA' || l.urgencia === 'MEDIA').length;
+  const baixasCount = leads.filter(l => l.urgencia === 'BAIXA').length;
+
+  const selectedLead = leads.find((l) => l.id === selectedLeadId) || (leads.length > 0 ? leads[0] : null);
 
   const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
@@ -284,13 +288,13 @@ export default function ProspeccaoPage() {
             </div>
             <div className="flex items-center gap-3 font-mono text-[11px] text-text-secondary">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-danger" /> Crítica: 3
+                <span className="w-2 h-2 rounded-full bg-danger" /> Crítica: {criticosCount}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-warning" /> Média: 2
+                <span className="w-2 h-2 rounded-full bg-warning" /> Média: {mediasCount}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" /> Baixa: 1
+                <span className="w-2 h-2 rounded-full bg-primary" /> Baixa: {baixasCount}
               </span>
             </div>
           </div>
@@ -309,18 +313,37 @@ export default function ProspeccaoPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle/50 text-text-primary">
-                {filteredLeads.map((lead) => {
-                  const isSelected = selectedLead?.id === lead.id;
-                  return (
-                    <tr
-                      key={lead.id}
-                      onClick={() => setSelectedLeadId(lead.id)}
-                      className={`cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-surface-elevated border-l-4 border-l-primary'
-                          : 'hover:bg-surface-elevated/50'
-                      }`}
-                    >
+                {filteredLeads.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-16 text-center text-text-disabled">
+                      <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                        <Building2 className="w-8 h-8 text-text-disabled/60" />
+                        <p className="font-semibold text-text-primary text-sm">Nenhum lead encontrado</p>
+                        <p className="text-xs text-text-secondary">
+                          Cadastre novos leads outbound ou importe contatos para iniciar abordagens com script.
+                        </p>
+                        <button
+                          onClick={() => setIsAddModalOpen(true)}
+                          className="mt-2 px-3 py-1.5 bg-primary text-surface-container-lowest font-bold text-xs rounded-lg flex items-center gap-1.5"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" /> Adicionar Lead
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLeads.map((lead) => {
+                    const isSelected = selectedLead?.id === lead.id;
+                    return (
+                      <tr
+                        key={lead.id}
+                        onClick={() => setSelectedLeadId(lead.id)}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-surface-elevated border-l-4 border-l-primary'
+                            : 'hover:bg-surface-elevated/50'
+                        }`}
+                      >
                       <td className="py-3.5 px-3">
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1.5">
@@ -398,7 +421,7 @@ export default function ProspeccaoPage() {
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>
@@ -415,7 +438,7 @@ export default function ProspeccaoPage() {
         </div>
 
         {/* Right Drawer: Lead Deep Inspection Canvas (Embedded & Pinned) */}
-        {selectedLead && (
+        {selectedLead ? (
           <div className="w-full xl:w-[37%] bg-surface rounded-xl border border-border-subtle overflow-hidden shadow-xl flex flex-col">
             {/* Drawer Header Bar */}
             <div className="p-4 bg-surface-elevated border-b border-border-subtle flex items-start justify-between">
@@ -560,6 +583,14 @@ export default function ProspeccaoPage() {
                 </div>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="w-full xl:w-[37%] bg-surface rounded-xl border border-dashed border-border-subtle p-8 flex flex-col items-center justify-center text-center text-text-disabled min-h-[300px]">
+            <Building2 className="w-8 h-8 mb-2 opacity-40 text-primary" />
+            <p className="font-semibold text-text-primary text-xs">Nenhum lead selecionado</p>
+            <p className="text-[11px] text-text-secondary mt-1 max-w-xs">
+              Cadastre e selecione um lead na lista para visualizar o diagnóstico técnico, métricas e script de abordagem.
+            </p>
           </div>
         )}
       </div>

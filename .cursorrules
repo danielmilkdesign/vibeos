@@ -1,8 +1,9 @@
 # REGRAS DO VIBE OS - PRODUCT DESIGN & DESIGN ENGINEERING
 
-- Siga estritamente o guia de regras em [SYSTEM_RULES.md](file:///D:/vibe-os/SYSTEM_RULES.md).
-- Zero magic numbers: use apenas tokens de design e utility classes do Tailwind.
-- Use CVA (Class Variance Authority) em todos os componentes flexíveis de UI.
-- Garanta suporte WCAG 2.1 AA (`focus-visible`, atributos ARIA semânticos).
-- Cada novo componente deve possuir arquivos `.tsx`, `.types.ts` e `.stories.tsx`.
-- Antes de gerar código de componentes complexos, crie ou siga a `DESIGN_SPEC.md` e o checklist em `tasks.md`.
+- **SEGUNDO CÉREBRO & CONTEXTO:** Antes de codificar ou tomar decisões de arquitetura/UI, consulte o Índice Mestre do Cérebro em [.vibe/brain/00_INDEX.md](file:///D:/vibe-os/.vibe/brain/00_INDEX.md).
+- **DIRETRIZES TÉCNICAS:** Siga estritamente o guia de regras em [SYSTEM_RULES.md](file:///D:/vibe-os/SYSTEM_RULES.md).
+- **ZERO MAGIC NUMBERS:** Use apenas tokens de design e utility classes do Tailwind (`bg-primary`, `p-4`, `gap-2`).
+- **CVA & RADIX UI:** Use CVA (Class Variance Authority) em todos os componentes flexíveis de UI com `React.forwardRef`.
+- **ACESSIBILIDADE:** Garanta suporte WCAG 2.1 AA (`focus-visible:ring-2`, atributos ARIA semânticos).
+- **ESTRUTURA ATÔMICA:** Cada novo componente deve possuir arquivos `.tsx`, `.types.ts` e `.stories.tsx`.
+- **SPEC-DRIVEN ENGINEERING:** Antes de gerar código de componentes ou rotas, siga o arquivo `DESIGN_SPEC.md` / `CLIENT_SPEC.md` e o checklist em `tasks.md`.

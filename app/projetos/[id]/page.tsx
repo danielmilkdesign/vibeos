@@ -29,10 +29,30 @@ export default function ProjetoDetailPage() {
     getStoredData('vibe_projects', INITIAL_PROJECTS_FULL)
   );
 
-  const foundProject = projects.find(p => p.id === id) || projects[0];
+  const foundProject = projects.find((p) => p.id === id);
   const [activeTab, setActiveTab] = useState<'TAREFAS' | 'SLA' | 'CONFORMIDADE'>('TAREFAS');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskAssignee, setNewTaskAssignee] = useState('Daniel Leite');
+
+  if (!foundProject) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto text-center py-20 space-y-4">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-[#0D1422] border border-[#1E293B] flex items-center justify-center text-[#64748B]">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-white">Projeto não encontrado</h2>
+        <p className="text-sm text-[#94A3B8]">O projeto solicitado não foi localizado no sistema ou ainda não foi iniciado.</p>
+        <Link
+          href="/projetos"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#06B6D4] text-slate-950 font-bold text-xs hover:bg-[#0891B2] transition-all"
+        >
+          ← Voltar para Lista de Projetos
+        </Link>
+      </div>
+    );
+  }
 
   const handleToggleTask = (taskId: string) => {
     const updated = projects.map(p => {

@@ -34,64 +34,7 @@ interface Cliente {
   whatsapp: string;
 }
 
-const CLIENTES_INICIAIS: Cliente[] = [
-  {
-    id: 'emp-1',
-    nome: 'Clínica Dra. Ana Silva',
-    nicho: 'Estética',
-    status: 'ATIVO',
-    servicos: ['Esteira de Crescimento', 'Anúncios Meta/Google'],
-    mrr: 4500,
-    projetoAtual: 'Lançamento Campanha Outono',
-    renovacaoEm: '15/11/2026',
-    saude: 'SAUDAVEL',
-    ultimoContato: 'Há 2 dias',
-    decisor: 'Dra. Ana Silva',
-    whatsapp: '5592991002233'
-  },
-  {
-    id: 'emp-2',
-    nome: 'Instituto OrtoOdonto',
-    nicho: 'Odontologia',
-    status: 'ATIVO',
-    servicos: ['Presença Própria', 'SEO Local'],
-    mrr: 3200,
-    projetoAtual: 'Reformulação da Identidade e Site',
-    renovacaoEm: '01/12/2026',
-    saude: 'ATENCAO',
-    ultimoContato: 'Há 5 dias',
-    decisor: 'Dr. Roberto Santos',
-    whatsapp: '5592998887766'
-  },
-  {
-    id: 'emp-3',
-    nome: 'Studio Fit Performance',
-    nicho: 'Fitness',
-    status: 'PAUSADO',
-    servicos: ['Campanha Semestral'],
-    mrr: 0,
-    projetoAtual: 'Aguardando Reabertura de Vagas',
-    renovacaoEm: '10/10/2026',
-    saude: 'RISCO',
-    ultimoContato: 'Há 12 dias',
-    decisor: 'Lucas Mendes',
-    whatsapp: '5592981114455'
-  },
-  {
-    id: 'emp-4',
-    nome: 'Advocacia Lima & Associados',
-    nicho: 'Advocacia',
-    status: 'ATIVO',
-    servicos: ['Sistema sob Medida', 'Gestão de Conteúdo'],
-    mrr: 6800,
-    projetoAtual: 'Módulo de Agendamento OAB',
-    renovacaoEm: '20/01/2027',
-    saude: 'SAUDAVEL',
-    ultimoContato: 'Hoje',
-    decisor: 'Dr. Fernando Lima',
-    whatsapp: '5592993332211'
-  }
-];
+const CLIENTES_INICIAIS: Cliente[] = [];
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>(() =>
@@ -230,8 +173,27 @@ export default function ClientesPage() {
         </div>
 
         {/* Clients Cards List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredClientes.map((cliente) => (
+        {filteredClientes.length === 0 ? (
+          <div className="p-12 text-center bg-slate-950/60 rounded-2xl border border-dashed border-slate-800 space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+              <Users className="w-7 h-7" />
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-white">Nenhum cliente cadastrado ainda</h4>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                Comece cadastrando os clientes reais da VIBE Design Tech para acompanhar contratos, MRR, esteiras de entrega e SLAs.
+              </p>
+            </div>
+            <Link
+              href="/empresas"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-cyan-950/20"
+            >
+              <Plus className="w-4 h-4" /> Cadastrar em Empresas
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredClientes.map((cliente) => (
             <div
               key={cliente.id}
               className="bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 space-y-4 transition-all"
@@ -321,6 +283,7 @@ export default function ClientesPage() {
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );
