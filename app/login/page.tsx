@@ -3,16 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth-context';
-import { UserRole } from '../../types/crm';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState('danielleitedesign@gmail.com');
-  const [password, setPassword] = useState('vibe2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [selectedFounder, setSelectedFounder] = useState<'daniel' | 'victor'>('daniel');
   const [error, setError] = useState('');
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -32,19 +30,6 @@ export default function LoginPage() {
       return;
     }
     router.push('/');
-  };
-
-  const handleToggleFounder = () => {
-    setError('');
-    if (selectedFounder === 'daniel') {
-      setSelectedFounder('victor');
-      setEmail('victorbelichar@gmail.com');
-      setPassword('vibe2026');
-    } else {
-      setSelectedFounder('daniel');
-      setEmail('danielleitedesign@gmail.com');
-      setPassword('vibe2026');
-    }
   };
 
   return (
@@ -305,32 +290,6 @@ export default function LoginPage() {
               </div>
               <span className="font-mono text-[10px] text-[#64748B]">Sessão Autenticada</span>
             </div>
-          </div>
-
-          {/* Quick Switch de Perfil Corporativo para Demonstração (Exato do Stitch) */}
-          <div
-            onClick={handleToggleFounder}
-            className="mt-6 p-3.5 rounded-xl bg-[#0D1422]/60 hover:bg-[#0D1422] border border-[#1E293B]/60 hover:border-[#06B6D4]/40 text-xs text-[#94A3B8] flex items-center justify-between transition-all cursor-pointer group"
-            title="Clique para alternar perfil"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#06B6D4]/15 group-hover:bg-[#06B6D4]/25 text-[#06B6D4] font-bold text-xs flex items-center justify-center font-mono transition-colors">
-                {selectedFounder === 'daniel' ? 'DM' : 'VB'}
-              </div>
-              <div>
-                <p className="text-white font-medium text-xs leading-none">
-                  {selectedFounder === 'daniel' ? 'Daniel Milk' : 'Victor Belichar'}
-                </p>
-                <p className="text-[11px] text-[#64748B] mt-0.5">
-                  {selectedFounder === 'daniel'
-                    ? 'Administrador VIBE • Manaus, AM'
-                    : 'CEO & Gestor Comercial • Manaus, AM'}
-                </p>
-              </div>
-            </div>
-            <span className="text-[10px] font-mono text-[#06B6D4] bg-[#06B6D4]/10 px-2 py-0.5 rounded border border-[#06B6D4]/20 group-hover:bg-[#06B6D4]/20 transition-colors">
-              {selectedFounder === 'daniel' ? 'Acesso Total' : 'Comercial'}
-            </span>
           </div>
         </div>
 
