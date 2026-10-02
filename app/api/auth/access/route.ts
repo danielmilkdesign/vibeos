@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FOUNDER_MAGIC_KEYS } from '../../../../lib/auth-context';
+import { FOUNDER_MAGIC_KEYS } from '../../../../lib/auth-constants';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
   }
 
   // Create session token
-  const sessionToken = `vibe_sess_${Date.now()}_${btoa(match.email).substring(0, 16)}`;
+  const emailB64 = Buffer.from(match.email).toString('base64').substring(0, 16);
+  const sessionToken = `vibe_sess_${Date.now()}_${emailB64}`;
 
   // Redirect to /acesso with token to sync localStorage and finish instant signin
   const accessUrl = new URL('/acesso', request.url);
