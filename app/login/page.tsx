@@ -9,7 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [email, setEmail] = useState('daniel@vibedesign.com.br');
-  const [password, setPassword] = useState('••••••••••••••••');
+  const [password, setPassword] = useState('vibe2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [selectedFounder, setSelectedFounder] = useState<'daniel' | 'victor'>('daniel');
@@ -17,23 +17,33 @@ export default function LoginPage() {
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!email) {
-      setError('Por favor, informe seu e-mail profissional.');
+      setError('Por favor, informe seu e-mail corporativo.');
       return;
     }
-    const isVictor = email.toLowerCase().includes('victor') || selectedFounder === 'victor';
-    const role: UserRole = isVictor ? 'GESTOR_COMERCIAL' : 'ADMINISTRADOR';
-    login(email, role);
+    if (!password) {
+      setError('Por favor, informe sua senha de acesso.');
+      return;
+    }
+    const result = login(email, password, rememberMe);
+    if (!result.success) {
+      setError(result.error || 'Credenciais inválidas. Verifique seu e-mail e senha.');
+      return;
+    }
     router.push('/');
   };
 
   const handleToggleFounder = () => {
+    setError('');
     if (selectedFounder === 'daniel') {
       setSelectedFounder('victor');
       setEmail('victor@vibedesign.com.br');
+      setPassword('vibe2026');
     } else {
       setSelectedFounder('daniel');
       setEmail('daniel@vibedesign.com.br');
+      setPassword('vibe2026');
     }
   };
 
