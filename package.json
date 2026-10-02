@@ -4,11 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3001",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "stitch": "npx -y @_davideast/stitch-mcp",
+    "stitch:doctor": "npx -y @_davideast/stitch-mcp doctor",
+    "stitch:screens": "npx -y @_davideast/stitch-mcp screens",
+    "stitch:serve": "npx -y @_davideast/stitch-mcp serve",
+    "stitch:proxy": "npx -y @_davideast/stitch-mcp proxy"
   },
   "dependencies": {
     "@neon/config": "^1.8.3",
@@ -25,6 +31,7 @@
     "@types/node": "^20.11.20",
     "@types/react": "^18.2.58",
     "@types/react-dom": "^18.2.19",
+    "@_davideast/stitch-mcp": "^0.0.51",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35",
     "prisma": "^5.10.2",

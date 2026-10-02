@@ -15,6 +15,7 @@ import {
   Plus,
   ArrowUpRight
 } from 'lucide-react';
+import { getStoredData, setStoredData } from '../../lib/crm-store';
 
 interface Entrega {
   id: string;
@@ -76,7 +77,9 @@ const ENTREGAS_INICIAIS: Entrega[] = [
 ];
 
 export default function EntregasPage() {
-  const [entregas, setEntregas] = useState<Entrega[]>(ENTREGAS_INICIAIS);
+  const [entregas, setEntregas] = useState<Entrega[]>(() =>
+    getStoredData('vibe_entregas_ui', ENTREGAS_INICIAIS)
+  );
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 

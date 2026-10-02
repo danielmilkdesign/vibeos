@@ -1,45 +1,77 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layers, AlertTriangle, CheckCircle2, Clock, Plus, UserCheck, Shield, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  PlusCircle,
+  Download,
+  Filter,
+  BarChart3,
+  Calendar,
+  Layers,
+  ChevronRight,
+  ShieldCheck,
+  MessageSquare,
+  AlertOctagon,
+  CheckSquare,
+  ExternalLink,
+  X
+} from 'lucide-react';
 import { getStoredData, setStoredData, INITIAL_PROJECTS_FULL } from '../../lib/crm-store';
-import { Project, ProjectStatus, RiskLevel } from '../../types/crm';
+import { Project, ProjectStatus } from '../../types/crm';
+import { useAuth } from '../../lib/auth-context';
 
 export default function ProjetosPage() {
-  const [projects, setProjects] = useState<Project[]>(() => getStoredData('vibe_projects', INITIAL_PROJECTS_FULL));
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>(() =>
+    getStoredData('vibe_projects', INITIAL_PROJECTS_FULL)
+  );
+  const [riskFilter, setRiskFilter] = useState<'ALL' | 'RISK_ONLY'>('ALL');
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
 
-  // Form state
-  const [name, setName] = useState('');
-  const [clientName, setClientName] = useState('');
-  const [projectType, setProjectType] = useState<'Presença Própria' | 'Esteira de Crescimento' | 'Sistema sob Medida' | 'Solução Clínica'>('Presença Própria');
-  const [totalVal, setTotalVal] = useState(2400);
+  // New Project Form
+  const [newCompany, setNewCompany] = useState('');
+  const [newDecisor, setNewDecisor] = useState('');
+  const [newType, setNewType] = useState('Presença Própria');
+  const [newTotalVal, setNewTotalVal] = useState(2400);
+
+  const activeProjectsCount = projects.filter((p) => p.status !== 'CONCLUIDO').length;
+  const criticalCount = projects.filter((p) => p.riskLevel === 'CRITICO' || p.riskLevel === 'ATENCAO').length;
+
+  const filteredProjects = projects.filter((p) => {
+    if (riskFilter === 'RISK_ONLY') {
+      return p.riskLevel === 'CRITICO' || p.riskLevel === 'ATENCAO';
+    }
+    return true;
+  });
 
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    if (!newCompany) return;
 
     const created: Project = {
-      id: `proj-${Date.now()}`,
-      nomeEmpresa: name,
-      clientName: clientName || 'Cliente VIBE',
+      id: `proj_${Date.now()}`,
+      nomeEmpresa: newCompany,
+      clientName: newDecisor || 'Cliente VIBE',
       nicho: 'ESTETICA',
-      projectType,
+      projectType: newType as any,
       status: 'ONBOARDING',
       riskLevel: 'NORMAL',
-      progress: 10,
-      valorTotal: Number(totalVal),
-      valorSinal: Number(totalVal) * 0.5,
+      progress: 15,
+      valorTotal: Number(newTotalVal),
+      valorSinal: Number(newTotalVal) * 0.5,
       prazoDias: 7,
       dataInicio: new Date().toISOString(),
       dataPrevisao: new Date(Date.now() + 7 * 86400000).toISOString(),
       checklistNormas: true,
-      ownerName: 'Fernanda Rocha (PM)',
+      ownerName: user?.name || 'Daniel Leite',
       tasks: [
-        { id: `tsk-1-${Date.now()}`, projectId: `proj-${Date.now()}`, title: 'Kickoff & Envio de Briefing de Onboarding', assignedTo: 'Victor Belém', dueDate: 'Em 1 dia', completed: true },
-        { id: `tsk-2-${Date.now()}`, projectId: `proj-${Date.now()}`, title: 'Aguardando Envio de Fotos & Logotipo (Cliente)', assignedTo: clientName || 'Cliente', dueDate: 'Em 2 dias', completed: false },
-        { id: `tsk-3-${Date.now()}`, projectId: `proj-${Date.now()}`, title: 'Desenvolvimento Frontend & Copywriting', assignedTo: 'Daniel Milk', dueDate: 'Em 5 dias', completed: false }
+        { id: `tsk-1-${Date.now()}`, projectId: `proj_${Date.now()}`, title: 'Kickoff & Coleta de Briefing', assignedTo: 'Victor Belichar', dueDate: '1 dia', completed: true },
+        { id: `tsk-2-${Date.now()}`, projectId: `proj_${Date.now()}`, title: 'Estruturação Wireframe & Copywriting', assignedTo: 'Daniel Leite', dueDate: '2 dias', completed: false },
+        { id: `tsk-3-${Date.now()}`, projectId: `proj_${Date.now()}`, title: 'Desenvolvimento Frontend & SEO Local', assignedTo: 'Daniel Leite', dueDate: '4 dias', completed: false }
       ]
     };
 
@@ -47,21 +79,22 @@ export default function ProjetosPage() {
     setProjects(updated);
     setStoredData('vibe_projects', updated);
     setIsNewProjectModalOpen(false);
-    setName('');
-    setClientName('');
+    setNewCompany('');
+    setNewDecisor('');
   };
 
-  const handleTaskToggle = (projId: string, taskId: string) => {
-    const updated = projects.map(p => {
+  const handleTaskToggle = (projId: string, taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = projects.map((p) => {
       if (p.id === projId) {
-        const updatedTasks = (p.tasks || []).map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
-        const completedCount = updatedTasks.filter(t => t.completed).length;
-        const newProgress = Math.round((completedCount / updatedTasks.length) * 100);
+        const tasks = (p.tasks || []).map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t));
+        const completed = tasks.filter((t) => t.completed).length;
+        const progress = Math.round((completed / tasks.length) * 100);
         return {
           ...p,
-          tasks: updatedTasks,
-          progress: newProgress,
-          status: newProgress === 100 ? ('CONCLUIDO' as ProjectStatus) : p.status
+          tasks,
+          progress,
+          status: progress === 100 ? ('CONCLUIDO' as ProjectStatus) : p.status
         };
       }
       return p;
@@ -69,267 +102,433 @@ export default function ProjetosPage() {
 
     setProjects(updated);
     setStoredData('vibe_projects', updated);
-    if (selectedProject && selectedProject.id === projId) {
-      const p = updated.find(x => x.id === projId);
-      if (p) setSelectedProject(p);
-    }
-  };
-
-  const handleUpdateStatus = (projId: string, status: ProjectStatus) => {
-    const updated = projects.map(p => p.id === projId ? { ...p, status } : p);
-    setProjects(updated);
-    setStoredData('vibe_projects', updated);
-    if (selectedProject && selectedProject.id === projId) {
-      setSelectedProject({ ...selectedProject, status });
-    }
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-400 text-[11px] font-mono">
-              Garantia SLA VIBE: Entrega em 7 Dias Corridos
+    <div className="bg-surface-container-lowest min-h-screen p-4 lg:p-8 space-y-6">
+      {/* Sub-Header & Controls Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-primary font-semibold">
+              Operação // Sprint Q4
             </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-text-disabled" />
+            <span className="font-mono text-[11px] text-text-disabled">Live Sync</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-100">
-            Esteira de Produção & Gestão de Projetos
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+            Projetos &amp; SLA
           </h1>
-          <p className="text-slate-400 text-xs mt-1">
-            Acompanhamento de onboarding, entregas, bloqueios do cliente e classificação de riscos.
+          <p className="text-xs text-text-secondary">
+            Acompanhamento operacional de produção, etapas de design, desenvolvimento e conformidade com o SLA contratual de 7 dias.
           </p>
         </div>
 
-        <button
-          onClick={() => setIsNewProjectModalOpen(true)}
-          className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/25"
-        >
-          <Plus className="w-4 h-4" /> Iniciar Novo Projeto
-        </button>
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setRiskFilter(riskFilter === 'ALL' ? 'RISK_ONLY' : 'ALL')}
+            className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border ${
+              riskFilter === 'RISK_ONLY'
+                ? 'bg-warning/20 text-warning border-warning/40'
+                : 'bg-surface-container-high border-border-subtle text-text-primary hover:bg-surface-elevated'
+            }`}
+            type="button"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-warning" />
+            <span>Filtrar por Risco</span>
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-warning/20 text-warning font-mono text-[10px]">
+              {criticalCount}
+            </span>
+          </button>
+
+          <Link
+            href="/tarefas"
+            className="h-9 px-3 bg-surface-container-high hover:bg-surface-elevated border border-border-subtle text-text-primary text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <CheckSquare className="w-3.5 h-3.5 text-text-secondary" />
+            <span>Tarefas</span>
+          </Link>
+
+          <button
+            onClick={() => alert('Exportando relatório operacional em PDF...')}
+            className="h-9 px-3 bg-surface-container-high hover:bg-surface-elevated border border-border-subtle text-text-primary text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
+            type="button"
+          >
+            <Download className="w-3.5 h-3.5 text-text-secondary" />
+            <span>Exportar Relatório</span>
+          </button>
+
+          <button
+            onClick={() => setIsNewProjectModalOpen(true)}
+            className="h-9 px-3.5 bg-primary-container hover:bg-primary-hover text-surface-container-lowest text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors shadow-sm shadow-cyan-500/10 cursor-pointer"
+            type="button"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>+ Novo Projeto</span>
+          </button>
+        </div>
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {projects.map((proj) => (
-          <div
-            key={proj.id}
-            className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-indigo-800/60 transition-all flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">
-                  {proj.projectType}
-                </span>
-                <span
-                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold border ${
-                    proj.riskLevel === 'CRITICO'
-                      ? 'bg-rose-950 text-rose-400 border-rose-800'
-                      : proj.riskLevel === 'ATENCAO'
-                      ? 'bg-amber-950 text-amber-400 border-amber-800'
-                      : 'bg-emerald-950 text-emerald-400 border-emerald-800'
-                  }`}
-                >
-                  Risco {proj.riskLevel}
-                </span>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-lg text-slate-100">{proj.nomeEmpresa}</h3>
-                <p className="text-xs text-slate-400">Decisor: {proj.clientName} • Resp: {proj.ownerName}</p>
-              </div>
-
-              {/* Progress & SLA */}
-              <div className="space-y-1.5 bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono">
-                <div className="flex justify-between text-xs text-slate-300">
-                  <span>Status: <strong className="text-cyan-400">{proj.status}</strong></span>
-                  <span>SLA 7d: <strong className="text-emerald-400">{proj.progress}% Concluído</strong></span>
-                </div>
-                <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
-                  <div
-                    className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full transition-all duration-500"
-                    style={{ width: `${proj.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Tasks Checklist Preview */}
-              <div className="space-y-2 pt-1">
-                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Checklist de Produção:</p>
-                <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                  {(proj.tasks || []).map((t) => (
-                    <label
-                      key={t.id}
-                      className="flex items-start gap-2 p-2 bg-slate-950/60 rounded-lg border border-slate-800/80 cursor-pointer text-xs group hover:bg-slate-800/60"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={t.completed}
-                        onChange={() => handleTaskToggle(proj.id, t.id)}
-                        className="mt-0.5 accent-cyan-500 rounded"
-                      />
-                      <span className={`flex-1 ${t.completed ? 'line-through text-slate-500' : 'text-slate-200'}`}>
-                        {t.title}
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-mono">{t.assignedTo}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-emerald-400 font-mono font-bold">R$ {proj.valorTotal.toLocaleString('pt-BR')}</span>
-              <button
-                onClick={() => setSelectedProject(proj)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
-              >
-                Gerenciar Projeto
-              </button>
+      {/* Top Metrics KPI Matrix */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1 */}
+        <div className="p-4 rounded-xl bg-surface-container-low border border-border-subtle shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-text-secondary">Projetos Ativos</span>
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high border border-border-subtle flex items-center justify-center">
+              <Clock className="w-4 h-4 text-primary" />
             </div>
           </div>
-        ))}
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-text-primary">
+              {String(activeProjectsCount).padStart(2, '0')}
+            </span>
+            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px] font-semibold">
+              Capacidade 75%
+            </span>
+          </div>
+          <div className="mt-2 text-text-disabled font-mono text-[11px] flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+            Manaus Studio Hub Operacional
+          </div>
+        </div>
+
+        {/* Card 2 */}
+        <div className="p-4 rounded-xl bg-surface-container-low border border-border-subtle shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-text-secondary">SLA Médio de Entrega</span>
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high border border-border-subtle flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-success" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-text-primary">6.2</span>
+              <span className="text-xs text-text-secondary">dias</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-success/15 text-success font-mono text-[10px] font-semibold">
+              -0.8d vs Meta
+            </span>
+          </div>
+          <div className="mt-2 text-text-disabled font-mono text-[11px]">
+            Meta contratual: <strong className="text-text-primary">7.0 dias corridos</strong>
+          </div>
+        </div>
+
+        {/* Card 3 */}
+        <div className="p-4 rounded-xl bg-surface-container-low border border-border-subtle shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-text-secondary">Em Risco / Bloqueados</span>
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high border border-border-subtle flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-warning" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-warning">
+              {String(criticalCount).padStart(2, '0')}
+            </span>
+            <span className="px-2 py-0.5 rounded bg-warning/20 text-warning font-mono text-[10px] font-semibold">
+              Aguardando Cliente
+            </span>
+          </div>
+          <div className="mt-2 text-text-disabled font-mono text-[11px]">
+            Tempo parado: <strong className="text-warning">38 horas úteis</strong>
+          </div>
+        </div>
+
+        {/* Card 4 */}
+        <div className="p-4 rounded-xl bg-surface-container-low border border-border-subtle shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-text-secondary">Entregas no Prazo</span>
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high border border-border-subtle flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl font-bold text-text-primary">94.2%</span>
+            <span className="px-2 py-0.5 rounded bg-success/15 text-success font-mono text-[10px] font-semibold">
+              +2.1% m/m
+            </span>
+          </div>
+          <div className="mt-2 text-text-disabled font-mono text-[11px]">
+            Últimos 90 dias: <strong className="text-text-primary">32/34 entregues</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Operational Project Execution Stack */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Layers className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-bold text-text-primary">
+              Fila de Execução em Tempo Real
+            </h2>
+          </div>
+          <span className="font-mono text-xs text-text-secondary">
+            Filtro atual: Todos os Projetos ({filteredProjects.length})
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {filteredProjects.map((proj) => {
+            const isCritical = proj.riskLevel === 'CRITICO' || proj.riskLevel === 'ATENCAO';
+            const initials = proj.nomeEmpresa
+              .split(' ')
+              .map((w) => w[0])
+              .join('')
+              .slice(0, 2);
+
+            return (
+              <div
+                key={proj.id}
+                className={`p-5 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors border shadow-sm flex flex-col gap-3 ${
+                  isCritical ? 'border-l-4 border-l-warning border-border-subtle' : 'border-l-4 border-l-success border-border-subtle'
+                }`}
+              >
+                {/* Project Header Row */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-lg bg-surface-container-high border border-border-subtle flex items-center justify-center font-mono text-xs font-bold shrink-0 ${
+                        isCritical ? 'text-warning' : 'text-primary'
+                      }`}
+                    >
+                      {initials}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/projetos/${proj.id}`}
+                          className="text-sm font-bold text-text-primary hover:text-primary transition-colors"
+                        >
+                          {proj.nomeEmpresa}
+                        </Link>
+                        {isCritical ? (
+                          <span className="px-2 py-0.5 rounded-full bg-warning/20 text-warning font-mono text-[10px] font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-warning animate-ping" />
+                            Em Risco
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-success/15 text-success font-mono text-[10px] font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                            No Prazo
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded bg-surface-container-high text-text-secondary font-mono text-[10px]">
+                          {proj.projectType}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        {proj.projectType} (Setup + SEO Local + SLA 7 Dias)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 self-end lg:self-auto">
+                    {/* Quick WhatsApp Action if in risk */}
+                    {isCritical && (
+                      <a
+                        href={`https://wa.me/5592992027059?text=Ol%C3%A1%20${encodeURIComponent(proj.clientName)},%20precisamos%20dos%20ativos%20para%20concluir%20a%20entrega%20no%20prazo!`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="h-8 px-3 bg-warning/15 hover:bg-warning/25 text-warning text-xs rounded-lg flex items-center gap-1.5 transition-colors font-semibold"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Cobrar via WhatsApp</span>
+                      </a>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-surface-elevated text-primary font-mono text-[10px] font-bold flex items-center justify-center border border-border-subtle">
+                        DL
+                      </div>
+                      <div className="flex flex-col text-right">
+                        <span className="font-mono text-[10px] text-text-disabled">Responsável</span>
+                        <span className="text-xs text-text-primary font-medium">{proj.ownerName}</span>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/projetos/${proj.id}`}
+                      className="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-surface-elevated border border-border-subtle flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"
+                      title="Abrir Detalhes do Projeto"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Blocking alert pill if critical */}
+                {isCritical && (
+                  <div className="px-3.5 py-2 rounded-lg bg-warning/10 border border-warning/20 flex items-center justify-between text-warning text-xs">
+                    <div className="flex items-center gap-2">
+                      <AlertOctagon className="w-4 h-4 shrink-0" />
+                      <span>
+                        <strong>Bloqueio registrado:</strong> Cliente não enviou fotos em alta resolução da clínica ou acessos de domínio.
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] uppercase tracking-wider font-bold">
+                      Parado há 1d 14h
+                    </span>
+                  </div>
+                )}
+
+                {/* SLA & Progress Visual Section */}
+                <div className="p-3.5 rounded-lg bg-surface-container-lowest/80 border border-border-subtle/50 flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 font-mono text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-secondary">
+                        SLA Contratado: <strong className="text-text-primary">{proj.prazoDias} dias</strong>
+                      </span>
+                      <span className="text-border-subtle">|</span>
+                      <span className={isCritical ? 'text-warning font-bold' : 'text-text-secondary'}>
+                        Dia Atual: <strong>4 de {proj.prazoDias}</strong>
+                      </span>
+                      <span className="text-border-subtle">|</span>
+                      <span className={`font-semibold flex items-center gap-1 ${isCritical ? 'text-warning' : 'text-success'}`}>
+                        {isCritical ? (
+                          <>Atenção ao Prazo</>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> SLA Protegido
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-text-secondary">
+                        Fase: <strong className="text-text-primary">{proj.status}</strong>
+                      </span>
+                      <span className={`font-bold ${isCritical ? 'text-warning' : 'text-text-primary'}`}>
+                        {proj.progress}% Concluído
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Multi-segment Progress Bar */}
+                  <div className="w-full h-2.5 bg-surface-container-high rounded-full overflow-hidden flex">
+                    <div
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        isCritical ? 'bg-warning' : 'bg-primary'
+                      }`}
+                      style={{ width: `${proj.progress}%` }}
+                    />
+                  </div>
+
+                  {/* Checklist summary & interactive toggles */}
+                  <div className="flex flex-wrap items-center justify-between font-mono text-[11px] text-text-disabled pt-1">
+                    <span className="flex items-center gap-1 text-primary">
+                      Checklist: {(proj.tasks || []).filter((t) => t.completed).length}/{(proj.tasks || []).length} tarefas concluídas
+                    </span>
+                    <span>Prazo Limite: {proj.dataPrevisao.split('T')[0]}</span>
+                  </div>
+
+                  {/* Inline quick task checkboxes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-border-subtle/40">
+                    {(proj.tasks || []).map((task) => (
+                      <label
+                        key={task.id}
+                        onClick={(e) => handleTaskToggle(proj.id, task.id, e)}
+                        className={`flex items-center gap-2 p-2 rounded border cursor-pointer text-xs transition-colors ${
+                          task.completed
+                            ? 'bg-surface-elevated/40 border-border-subtle text-text-disabled line-through'
+                            : 'bg-surface-elevated border-border-subtle text-text-primary hover:border-primary/40'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          readOnly
+                          className="accent-primary"
+                        />
+                        <span className="truncate">{task.title}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* New Project Modal */}
       {isNewProjectModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-100">Iniciar Novo Projeto (SLA 7 Dias)</h3>
-            <form onSubmit={handleCreateProject} className="space-y-3">
+          <div className="bg-surface border border-border-subtle w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+              <h3 className="text-base font-bold text-text-primary">Iniciar Novo Projeto (SLA 7 Dias)</h3>
+              <button onClick={() => setIsNewProjectModalOpen(false)} className="text-text-disabled hover:text-text-primary">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProject} className="space-y-3 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nome da Empresa / Projeto</label>
+                <label className="block text-text-secondary font-semibold mb-1">Empresa / Cliente</label>
                 <input
                   type="text"
                   required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: OdontoClin Adrianópolis"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  value={newCompany}
+                  onChange={(e) => setNewCompany(e.target.value)}
+                  placeholder="Ex: Clínica Dra. Juliana Estética"
+                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nome do Decisor</label>
+                <label className="block text-text-secondary font-semibold mb-1">Nome do Decisor</label>
                 <input
                   type="text"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Dra. Renata Mello"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  value={newDecisor}
+                  onChange={(e) => setNewDecisor(e.target.value)}
+                  placeholder="Dra. Juliana Vieira"
+                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Template de Oferta</label>
+                <label className="block text-text-secondary font-semibold mb-1">Tipo de Projeto</label>
                 <select
-                  value={projectType}
-                  onChange={(e) => setProjectType(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value)}
+                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary cursor-pointer"
                 >
                   <option value="Presença Própria">Presença Própria (SLA 7d)</option>
-                  <option value="Esteira de Crescimento">Esteira de Crescimento</option>
-                  <option value="Solução Clínica">Solução para Clínicas</option>
-                  <option value="Sistema sob Medida">Sistema Sob Medida</option>
+                  <option value="Esteira de Crescimento">Esteira de Crescimento (12 artes/mês)</option>
+                  <option value="Sistema Sob Medida">Sistema Sob Medida</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Valor Contratado (R$)</label>
+                <label className="block text-text-secondary font-semibold mb-1">Valor Contratado (R$)</label>
                 <input
                   type="number"
-                  value={totalVal}
-                  onChange={(e) => setTotalVal(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
+                  value={newTotalVal}
+                  onChange={(e) => setNewTotalVal(Number(e.target.value))}
+                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary font-mono focus:outline-none focus:border-primary"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setIsNewProjectModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-medium"
+                  className="px-4 py-2 bg-surface-container-high text-text-secondary hover:text-text-primary rounded-lg font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/25"
+                  className="px-4 py-2 bg-primary-container hover:bg-primary-hover text-surface-container-lowest font-bold rounded-lg shadow-sm"
                 >
                   Iniciar Projeto
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Selected Project Management Modal */}
-      {selectedProject && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <div>
-                <span className="text-xs font-mono text-cyan-400">{selectedProject.projectType}</span>
-                <h3 className="text-lg font-bold text-slate-100">{selectedProject.nomeEmpresa}</h3>
-              </div>
-              <span className="px-2.5 py-1 rounded bg-indigo-950 text-indigo-400 text-xs font-mono border border-indigo-800/40">
-                {selectedProject.status}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Alterar Etapa do Projeto:</label>
-                <select
-                  value={selectedProject.status}
-                  onChange={(e) => handleUpdateStatus(selectedProject.id, e.target.value as ProjectStatus)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500"
-                >
-                  <option value="ONBOARDING">ONBOARDING (Coleta de Briefing)</option>
-                  <option value="EM_PLANEJAMENTO">EM PLANEJAMENTO (Arquitetura)</option>
-                  <option value="EM_PRODUCAO">EM PRODUÇÃO (Design & Code)</option>
-                  <option value="AGUARDANDO_CLIENTE">AGUARDANDO CLIENTE (Bloqueio)</option>
-                  <option value="REVISAO_INTERNA">REVISÃO INTERNA (QA)</option>
-                  <option value="EM_APROVACAO">EM APROVAÇÃO (Cliente)</option>
-                  <option value="PUBLICACAO">PUBLICAÇÃO (Deploy Vercel)</option>
-                  <option value="CONCLUIDO">CONCLUÍDO (Entregue)</option>
-                </select>
-              </div>
-
-              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2 font-mono text-xs">
-                <p className="flex justify-between text-slate-300"><span>Valor Total:</span> <strong>R$ {selectedProject.valorTotal.toLocaleString('pt-BR')}</strong></p>
-                <p className="flex justify-between text-emerald-400"><span>Sinal 50% Pago:</span> <strong>R$ {selectedProject.valorSinal.toLocaleString('pt-BR')}</strong></p>
-                <p className="flex justify-between text-slate-400"><span>Data de Início:</span> <span>{selectedProject.dataInicio.split('T')[0]}</span></p>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-300">Tarefas de Produção:</p>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {(selectedProject.tasks || []).map((t) => (
-                    <label key={t.id} className="flex items-center gap-2 p-2 bg-slate-950 rounded border border-slate-800 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={t.completed}
-                        onChange={() => handleTaskToggle(selectedProject.id, t.id)}
-                        className="accent-cyan-500"
-                      />
-                      <span className={t.completed ? 'line-through text-slate-500' : 'text-slate-200'}>{t.title}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-800">
-              <button
-                onClick={() => setSelectedProject(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-medium"
-              >
-                Concluir Edição
-              </button>
-            </div>
           </div>
         </div>
       )}

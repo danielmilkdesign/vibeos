@@ -57,6 +57,7 @@ enum ProposalStatus {
 enum ProjectStatus {
   NAO_INICIADO
   ONBOARDING
+  BRIEFING
   EM_PLANEJAMENTO
   EM_PRODUCAO
   AGUARDANDO_CLIENTE
@@ -184,7 +185,7 @@ model Project {
   clientName      String
   nicho           NichoEnum     @default(OUTROS)
   projectType     String        @default("Presença Própria")
-  status          ProjectStatus @default(BRIEFING)
+  status          ProjectStatus @default(ONBOARDING)
   riskLevel       RiskLevel     @default(NORMAL)
   progress        Int           @default(0)
   totalValue      Float

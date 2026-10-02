@@ -260,10 +260,10 @@ export interface Company {
   website?: string;
   instagram?: string;
   whatsapp?: string;
-  decisorName: string;
-  decisorRole: string;
-  decisorEmail: string;
-  decisorPhone: string;
+  decisorName?: string;
+  decisorRole?: string;
+  decisorEmail?: string;
+  decisorPhone?: string;
   isClient: boolean;
   mrr: number;
   health: 'SAUDAVEL' | 'ATENCAO' | 'RISCO';

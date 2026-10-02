@@ -6,23 +6,23 @@ import { User, UserRole } from '../types/crm';
 export const DEMO_USERS: User[] = [
   {
     id: 'usr-admin',
-    name: 'Daniel Milk (Admin VIBE)',
-    email: 'admin@vibe.tech',
+    name: 'Daniel Leite (CTO - Tecnologia & Produto)',
+    email: 'daniel@vibe.tech',
     role: 'ADMINISTRADOR',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     active: true
   },
   {
-    id: 'usr-gestor',
-    name: 'Carlos Mendes (Gestor Comercial)',
-    email: 'gestor@vibe.tech',
+    id: 'usr-ceo',
+    name: 'Victor Belichar (CEO - Comercial & Relacionamento)',
+    email: 'victor@vibe.tech',
     role: 'GESTOR_COMERCIAL',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     active: true
   },
   {
     id: 'usr-sdr',
-    name: 'Victor Belém (SDR / Comercial)',
+    name: 'Time Outbound SDR (Comercial)',
     email: 'comercial@vibe.tech',
     role: 'COMERCIAL',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',

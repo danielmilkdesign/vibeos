@@ -35,7 +35,7 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
     stage: 'REUNIAO_AGENDADA',
     nextAction: 'Realizar Análise de 20 min via Google Meet',
     nextActionDate: '2026-10-04',
-    ownerName: 'Victor Belém',
+    ownerName: 'Victor Belichar',
     createdAt: '2026-10-01T14:00:00Z',
     updatedAt: '2026-10-02T10:00:00Z'
   },
@@ -69,7 +69,7 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
     stage: 'PROPOSTA_ENVIADA',
     nextAction: 'Follow-up D+2 envio da proposta',
     nextActionDate: '2026-10-05',
-    ownerName: 'Victor Belém',
+    ownerName: 'Victor Belichar',
     createdAt: '2026-10-01T14:00:00Z',
     updatedAt: '2026-10-02T11:00:00Z'
   },
@@ -86,7 +86,7 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
     stage: 'FECHADO',
     nextAction: 'Kickoff de Onboarding e recebimento de assets',
     nextActionDate: '2026-10-03',
-    ownerName: 'Daniel Milk',
+    ownerName: 'Daniel Leite',
     createdAt: '2026-10-01T14:00:00Z',
     updatedAt: '2026-10-02T08:30:00Z'
   }
@@ -136,10 +136,10 @@ export const INITIAL_PROJECTS_FULL: Project[] = [
     checklistNormas: true,
     ownerName: 'Fernanda Rocha',
     tasks: [
-      { id: 'tsk-1', projectId: 'proj-1', title: 'Coleta de briefing e fotos da clínica', assignedTo: 'Victor Belém', dueDate: '2026-10-03', completed: true },
+      { id: 'tsk-1', projectId: 'proj-1', title: 'Coleta de briefing e fotos da clínica', assignedTo: 'Victor Belichar', dueDate: '2026-10-03', completed: true },
       { id: 'tsk-2', projectId: 'proj-1', title: 'Arquitetura de informação e Copywriting', assignedTo: 'Fernanda Rocha', dueDate: '2026-10-04', completed: true },
-      { id: 'tsk-3', projectId: 'proj-1', title: 'Design de interface (Figma)', assignedTo: 'Daniel Milk', dueDate: '2026-10-06', completed: false },
-      { id: 'tsk-4', projectId: 'proj-1', title: 'Desenvolvimento Next.js & Tailwind', assignedTo: 'Daniel Milk', dueDate: '2026-10-08', completed: false }
+      { id: 'tsk-3', projectId: 'proj-1', title: 'Design de interface (Figma)', assignedTo: 'Daniel Leite', dueDate: '2026-10-06', completed: false },
+      { id: 'tsk-4', projectId: 'proj-1', title: 'Desenvolvimento Next.js & Tailwind', assignedTo: 'Daniel Leite', dueDate: '2026-10-08', completed: false }
     ]
   },
   {
@@ -214,7 +214,7 @@ export const INITIAL_MEETINGS: Meeting[] = [
     durationMinutes: 20,
     meetingUrl: 'https://meet.google.com/vib-e-os-demo',
     channel: 'GOOGLE_MEET',
-    assignedTo: 'Victor Belém',
+    assignedTo: 'Victor Belichar',
     status: 'AGENDADA',
     mainBottleneck: 'Site em WordPress 2018 desatualizado, sem conversão mobile',
     recommendedOffer: 'Presença Própria com SLA 7 Dias'
@@ -245,7 +245,7 @@ export const INITIAL_COMPLIANCE: ComplianceCheck[] = [
     claimsVerified: true,
     sensitiveDataProtected: true,
     internalApproved: true,
-    reviewerName: 'Daniel Milk',
+    reviewerName: 'Daniel Leite',
     reviewedAt: '2026-10-01T15:00:00Z',
     notes: 'Código de Ética da OAB respeitado. Sem promessa de resultado em peças de marketing.'
   }

@@ -181,7 +181,7 @@ export default function ContratosPage() {
                   type="text"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Victor Belém"
+                  placeholder="Victor Belichar"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
                 />
               </div>

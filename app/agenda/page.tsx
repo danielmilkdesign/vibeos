@@ -35,7 +35,7 @@ export default function AgendaPage() {
       durationMinutes: 20,
       meetingUrl: 'https://meet.google.com/vibe-os-analise',
       channel: 'GOOGLE_MEET',
-      assignedTo: 'Victor Belém (Comercial)',
+      assignedTo: 'Victor Belichar (Comercial)',
       status: 'AGENDADA'
     };
 

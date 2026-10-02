@@ -17,7 +17,7 @@ import {
   RefreshCw,
   Plus
 } from 'lucide-react';
-import { getStoredData } from '../../lib/crm-store';
+import { getStoredData, setStoredData } from '../../lib/crm-store';
 
 interface Cliente {
   id: string;
@@ -94,7 +94,9 @@ const CLIENTES_INICIAIS: Cliente[] = [
 ];
 
 export default function ClientesPage() {
-  const [clientes] = useState<Cliente[]>(CLIENTES_INICIAIS);
+  const [clientes, setClientes] = useState<Cliente[]>(() =>
+    getStoredData('vibe_clientes', CLIENTES_INICIAIS)
+  );
   const [tabFilter, setTabFilter] = useState<'TODOS' | 'ATIVO' | 'PROSPECT' | 'PAUSADO' | 'ENCERRADO'>('ATIVO');
   const [searchTerm, setSearchTerm] = useState('');
   const [saudeFilter, setSaudeFilter] = useState<string>('ALL');

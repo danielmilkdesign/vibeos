@@ -16,6 +16,7 @@ import {
   Calendar,
   ChevronRight
 } from 'lucide-react';
+import { getStoredData, setStoredData } from '../../lib/crm-store';
 
 interface Tarefa {
   id: string;
@@ -91,20 +92,24 @@ const TAREFAS_INICIAIS: Tarefa[] = [
 ];
 
 export default function TarefasPage() {
-  const [tarefas, setTarefas] = useState<Tarefa[]>(TAREFAS_INICIAIS);
+  const [tarefas, setTarefas] = useState<Tarefa[]>(() =>
+    getStoredData('vibe_tarefas_ui', TAREFAS_INICIAIS)
+  );
   const [viewMode, setViewMode] = useState<'MINHAS' | 'TODAS' | 'ATRASADAS'>('TODAS');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [prioridadeFilter, setPrioridadeFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
   const toggleTaskConcluida = (id: string) => {
-    setTarefas(tarefas.map(t => {
+    const updated = tarefas.map(t => {
       if (t.id === id) {
-        const nextStatus = t.status === 'CONCLUIDA' ? 'A_FAZER' : 'CONCLUIDA';
+        const nextStatus: Tarefa['status'] = t.status === 'CONCLUIDA' ? 'A_FAZER' : 'CONCLUIDA';
         return { ...t, status: nextStatus };
       }
       return t;
-    }));
+    });
+    setTarefas(updated);
+    setStoredData('vibe_tarefas_ui', updated);
   };
 
   const filteredTarefas = tarefas.filter((t) => {

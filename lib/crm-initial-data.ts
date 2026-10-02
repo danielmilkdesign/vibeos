@@ -29,10 +29,10 @@ export const INITIAL_LEADS: Lead[] = [
     instagramUrl: 'https://instagram.com/drajulianaestetica',
     valorEstimado: 3090,
     fonteColeta: 'Prospecção Manual Instagram',
-    ownerName: 'Victor Belém',
+    ownerName: 'Victor Belichar',
     interacoes: [
-      { id: 'int-1', tipo: 'WHATSAPP', conteudo: 'Primeiro contato via WhatsApp apresentando o diagnóstico rápido do site.', autor: 'Victor Belém', createdAt: '2026-10-01T10:30:00Z' },
-      { id: 'int-2', tipo: 'REUNIAO', conteudo: 'Reunião de 20 min agendada para 04/10 às 15:00.', autor: 'Victor Belém', createdAt: '2026-10-02T09:00:00Z' }
+      { id: 'int-1', tipo: 'WHATSAPP', conteudo: 'Primeiro contato via WhatsApp apresentando o diagnóstico rápido do site.', autor: 'Victor Belichar', createdAt: '2026-10-01T10:30:00Z' },
+      { id: 'int-2', tipo: 'REUNIAO', conteudo: 'Reunião de 20 min agendada para 04/10 às 15:00.', autor: 'Victor Belichar', createdAt: '2026-10-02T09:00:00Z' }
     ],
     createdAt: '2026-09-28T14:00:00Z',
     updatedAt: '2026-10-02T09:00:00Z'
@@ -86,9 +86,9 @@ export const INITIAL_LEADS: Lead[] = [
     instagramUrl: 'https://instagram.com/odontoartmanaus',
     valorEstimado: 3699,
     fonteColeta: 'Google Search Outbound',
-    ownerName: 'Victor Belém',
+    ownerName: 'Victor Belichar',
     interacoes: [
-      { id: 'int-4', tipo: 'PROPOSTA', conteudo: 'Proposta comercial VIBE-2026-001 enviada com opção de pagamento em 2x.', autor: 'Victor Belém', createdAt: '2026-10-02T11:00:00Z' }
+      { id: 'int-4', tipo: 'PROPOSTA', conteudo: 'Proposta comercial VIBE-2026-001 enviada com opção de pagamento em 2x.', autor: 'Victor Belichar', createdAt: '2026-10-02T11:00:00Z' }
     ],
     createdAt: '2026-09-25T16:00:00Z',
     updatedAt: '2026-10-02T11:00:00Z'
@@ -113,7 +113,7 @@ export const INITIAL_LEADS: Lead[] = [
     phoneWhatsapp: '(92) 98111-2233',
     valorEstimado: 5790,
     fonteColeta: 'Indicação',
-    ownerName: 'Daniel Milk',
+    ownerName: 'Daniel Leite',
     createdAt: '2025-10-10T10:00:00Z',
     updatedAt: '2026-10-01T15:00:00Z'
   }
@@ -137,7 +137,7 @@ export const INITIAL_COMPANIES: Company[] = [
     isClient: false,
     mrr: 0,
     health: 'ATENCAO',
-    ownerName: 'Victor Belém',
+    ownerName: 'Victor Belichar',
     createdAt: '2026-09-28T14:00:00Z'
   },
   {
@@ -196,7 +196,7 @@ export const INITIAL_COMPANIES: Company[] = [
     mrr: 1290,
     health: 'ATENCAO',
     clientSince: '2025-10-15',
-    ownerName: 'Daniel Milk',
+    ownerName: 'Daniel Leite',
     createdAt: '2025-10-10T10:00:00Z'
   }
 ];
@@ -235,7 +235,7 @@ export const INITIAL_DELIVERABLES: Deliverable[] = [
     title: 'Reels Vídeo: Mitos sobre Isenção de Imposto de Renda',
     type: 'REELS_VIDEO',
     cycleMonth: '2026-10',
-    assignedTo: 'Daniel Milk',
+    assignedTo: 'Daniel Leite',
     status: 'ENVIADA_CLIENTE',
     dueDate: '2026-10-06',
     fileUrl: 'https://vibeos.storage/deliverables/del-3.mp4',
@@ -280,7 +280,7 @@ export const INITIAL_TIMELINE_EVENTS: TimelineEvent[] = [
     entityId: 'lead-1',
     title: 'Lead qualificado via Outbound',
     description: 'Lead coletado do Instagram com auditoria SEO de tempo de carregamento 8.4s.',
-    user: 'Victor Belém',
+    user: 'Victor Belichar',
     createdAt: '2026-09-28T14:00:00Z'
   },
   {
@@ -289,7 +289,7 @@ export const INITIAL_TIMELINE_EVENTS: TimelineEvent[] = [
     entityId: 'opp-4',
     title: 'Venda Fechada!',
     description: 'Oportunidade OdontoClin Adrianópolis fechada por R$ 3.200 setup + R$ 490/mês.',
-    user: 'Daniel Milk',
+    user: 'Daniel Leite',
     createdAt: '2026-10-02T08:30:00Z'
   }
 ];
@@ -299,7 +299,7 @@ export const INITIAL_TASKS_ALL: ProjectTask[] = [
     id: 'tsk-global-1',
     projectId: 'proj-1',
     title: 'Design de interface no Figma - OdontoClin',
-    assignedTo: 'Daniel Milk',
+    assignedTo: 'Daniel Leite',
     dueDate: '2026-10-06',
     status: 'EM_ANDAMENTO',
     completed: false,
