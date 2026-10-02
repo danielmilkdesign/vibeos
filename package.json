@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3001",
     "build": "prisma generate && next build",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate || true",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
@@ -31,7 +31,6 @@
     "@types/node": "^20.11.20",
     "@types/react": "^18.2.58",
     "@types/react-dom": "^18.2.19",
-    "@_davideast/stitch-mcp": "^0.0.51",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35",
     "prisma": "^5.10.2",
