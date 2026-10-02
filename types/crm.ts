@@ -13,6 +13,7 @@ export interface User {
   role: UserRole;
   avatarUrl?: string;
   active: boolean;
+  department?: string;
 }
 
 export type LeadStatus =
@@ -37,8 +38,9 @@ export type UrgenciaEnum = 'CRITICA' | 'ALTA' | 'MEDIA' | 'BAIXA';
 
 export interface Interacao {
   id: string;
-  leadId: string;
-  tipo: 'EMAIL' | 'WHATSAPP' | 'REUNIAO' | 'NOTA' | 'PROPOSTA';
+  leadId?: string;
+  companyId?: string;
+  tipo: 'EMAIL' | 'WHATSAPP' | 'REUNIAO' | 'NOTA' | 'PROPOSTA' | 'SISTEMA';
   conteudo: string;
   autor?: string;
   createdAt: string;
@@ -67,6 +69,8 @@ export interface Lead {
   instagramUrl?: string;
   valorEstimado?: number;
 
+  fonteColeta?: string;
+  ownerName?: string;
   interacoes?: Interacao[];
   createdAt: string;
   updatedAt: string;
@@ -87,6 +91,7 @@ export interface Opportunity {
   nextAction?: string;
   nextActionDate?: string;
   ownerName: string;
+  lossReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -113,6 +118,7 @@ export interface Proposal {
   id: string;
   proposalNumber: string;
   opportunityId?: string;
+  companyId?: string;
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
@@ -122,6 +128,7 @@ export interface Proposal {
   validUntil: string;
   status: ProposalStatus;
   scopeText: string;
+  paymentTerms?: string;
   items?: ProposalItem[];
   createdAt: string;
 }
@@ -141,13 +148,24 @@ export type ProjectStatus =
 
 export type RiskLevel = 'NORMAL' | 'ATENCAO' | 'CRITICO';
 
+export type TaskStatus =
+  | 'A_FAZER'
+  | 'EM_ANDAMENTO'
+  | 'EM_REVISAO'
+  | 'AGUARDANDO_CLIENTE'
+  | 'BLOQUEADA'
+  | 'CONCLUIDA';
+
 export interface ProjectTask {
   id: string;
   projectId: string;
   title: string;
   assignedTo: string;
   dueDate: string;
+  status?: TaskStatus;
   completed: boolean;
+  priority?: 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE';
+  description?: string;
 }
 
 export interface Project {
@@ -169,6 +187,7 @@ export interface Project {
   checklistNormas: boolean;
   ownerName: string;
   tasks?: ProjectTask[];
+  currentBlocker?: string;
 }
 
 export type Projeto = Project;
@@ -185,6 +204,7 @@ export type ContractStatus =
 export interface Contract {
   id: string;
   contractNumber: string;
+  companyId?: string;
   companyName: string;
   clientName: string;
   offerName: string;
@@ -217,6 +237,7 @@ export interface Meeting {
 
 export interface ComplianceCheck {
   id: string;
+  projectId?: string;
   projectName: string;
   nicho: NichoEnum;
   identityVerified: boolean;
@@ -225,4 +246,73 @@ export interface ComplianceCheck {
   sensitiveDataProtected: boolean;
   internalApproved: boolean;
   notes?: string;
+  reviewerName?: string;
+  reviewedAt?: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  tradeName?: string;
+  nicho: NichoEnum;
+  city: string;
+  state: string;
+  website?: string;
+  instagram?: string;
+  whatsapp?: string;
+  decisorName: string;
+  decisorRole: string;
+  decisorEmail: string;
+  decisorPhone: string;
+  isClient: boolean;
+  mrr: number;
+  health: 'SAUDAVEL' | 'ATENCAO' | 'RISCO';
+  clientSince?: string;
+  ownerName: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export type DeliverableStatus =
+  | 'PLANEJADA'
+  | 'EM_PRODUCAO'
+  | 'REVISAO_INTERNA'
+  | 'ENVIADA_CLIENTE'
+  | 'AJUSTES_SOLICITADOS'
+  | 'APROVADA'
+  | 'PUBLICADA';
+
+export interface Deliverable {
+  id: string;
+  contractId?: string;
+  companyName: string;
+  title: string;
+  type: 'ARTE_REDES' | 'CARROSSEL' | 'REELS_VIDEO' | 'LANDING_PAGE' | 'EBOOK' | 'ANUNCIO';
+  cycleMonth: string; // e.g. "2026-10"
+  assignedTo: string;
+  status: DeliverableStatus;
+  dueDate: string;
+  fileUrl?: string;
+  feedbackClient?: string;
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'FOLLOW_UP' | 'REUNIAO' | 'PROPOSTA' | 'TAREFA' | 'APROVACAO' | 'RENOVACAO' | 'ALERTA';
+  linkUrl?: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  entityType: 'LEAD' | 'OPPORTUNITY' | 'PROPOSAL' | 'PROJECT' | 'CONTRACT' | 'COMPANY';
+  entityId: string;
+  title: string;
+  description: string;
+  user: string;
+  createdAt: string;
 }

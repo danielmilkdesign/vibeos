@@ -15,7 +15,12 @@ import {
   Settings,
   Sparkles,
   LogOut,
-  UserCheck
+  UserCheck,
+  Users,
+  CheckSquare,
+  PackageCheck,
+  BarChart3,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 
@@ -23,23 +28,48 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout, switchUserRole } = useAuth();
 
-  const navItems = [
-    { href: '/', label: 'Dashboard 360°', icon: TrendingUp },
-    { href: '/leads', label: 'Prospecção Outbound', icon: Building2 },
-    { href: '/pipeline', label: 'Pipeline Commercial', icon: Kanban },
-    { href: '/agenda', label: 'Agenda & Análise 20m', icon: Calendar },
-    { href: '/propostas', label: 'Propostas Comerciais', icon: FileText },
-    { href: '/projetos', label: 'Esteira de Projetos', icon: Layers },
-    { href: '/contratos', label: 'Contratos & Recorrência', icon: FileCheck },
-    { href: '/conformidade', label: 'Normas & Conformidade', icon: ShieldCheck },
-    { href: '/configuracoes', label: 'Configurações & Equipe', icon: Settings },
+  const menuGroups = [
+    {
+      title: 'COMERCIAL',
+      items: [
+        { href: '/prospeccao', label: 'Prospecção Outbound', icon: Building2 },
+        { href: '/pipeline', label: 'Pipeline Comercial', icon: Kanban },
+        { href: '/agenda', label: 'Agenda & Análise 20m', icon: Calendar },
+        { href: '/propostas', label: 'Propostas Comerciais', icon: FileText }
+      ]
+    },
+    {
+      title: 'RELACIONAMENTO',
+      items: [
+        { href: '/empresas', label: 'Empresas & Contatos', icon: Building2 },
+        { href: '/clientes', label: 'Clientes & Retenção', icon: Users },
+        { href: '/contratos', label: 'Contratos & Recorrência', icon: FileCheck }
+      ]
+    },
+    {
+      title: 'OPERAÇÃO',
+      items: [
+        { href: '/projetos', label: 'Esteira de Projetos', icon: Layers },
+        { href: '/tarefas', label: 'Gestão de Tarefas', icon: CheckSquare },
+        { href: '/entregas', label: 'Entregas & Conteúdo', icon: PackageCheck },
+        { href: '/conformidade', label: 'Normas & Conformidade', icon: ShieldCheck }
+      ]
+    },
+    {
+      title: 'GESTÃO',
+      items: [
+        { href: '/', label: 'Dashboard 360°', icon: TrendingUp },
+        { href: '/relatorios', label: 'Relatórios & Performance', icon: BarChart3 },
+        { href: '/configuracoes', label: 'Configurações & Equipe', icon: Settings }
+      ]
+    }
   ];
 
   return (
-    <aside className="w-64 border-r border-slate-800 bg-slate-900/60 p-5 flex flex-col justify-between hidden lg:flex select-none">
+    <aside className="w-64 border-r border-slate-800 bg-slate-900/60 p-5 flex flex-col justify-between hidden lg:flex select-none h-screen sticky top-0 overflow-y-auto custom-scrollbar">
       <div>
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-3 mb-8 group">
+        <Link href="/" className="flex items-center gap-3 mb-6 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
             V
           </div>
@@ -53,31 +83,42 @@ export default function Sidebar() {
           </div>
         </Link>
 
-        {/* Navigation Menu */}
-        <nav className="space-y-1 text-sm font-medium">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-cyan-950/80 to-slate-900 text-cyan-300 border border-cyan-800/60 shadow-md shadow-cyan-950/50'
-                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Grouped Navigation Menu */}
+        <div className="space-y-5">
+          {menuGroups.map((group) => (
+            <div key={group.title} className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-500 tracking-wider px-3 uppercase">
+                {group.title}
+              </p>
+              <nav className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href === '/prospeccao' && pathname === '/leads');
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-r from-cyan-950/80 to-slate-900 text-cyan-300 border border-cyan-800/60 shadow-md shadow-cyan-950/50 font-semibold'
+                          : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* User Session & Role Quick Switcher */}
-      <div className="space-y-3 pt-4 border-t border-slate-800">
+      <div className="space-y-3 pt-4 mt-6 border-t border-slate-800">
         {user ? (
           <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-xs space-y-2">
             <div className="flex items-center gap-2.5">

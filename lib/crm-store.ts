@@ -6,14 +6,25 @@ import {
   Contract,
   Meeting,
   ComplianceCheck,
-  LeadStatus,
-  ProjectStatus
+  Company,
+  Deliverable,
+  Notification,
+  TimelineEvent,
+  ProjectTask
 } from '../types/crm';
-import { INITIAL_LEADS } from './crm-initial-data';
+import {
+  INITIAL_LEADS,
+  INITIAL_COMPANIES,
+  INITIAL_DELIVERABLES,
+  INITIAL_NOTIFICATIONS,
+  INITIAL_TIMELINE_EVENTS,
+  INITIAL_TASKS_ALL
+} from './crm-initial-data';
 
 export const INITIAL_OPPORTUNITIES: Opportunity[] = [
   {
     id: 'opp-1',
+    companyId: 'comp-1',
     companyName: 'Clínica Dra. Juliana Estética',
     title: 'Site de Agendamento + Esteira 5 Artes',
     offerName: 'Solução para Clínicas',
@@ -30,6 +41,7 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
   },
   {
     id: 'opp-2',
+    companyId: 'comp-2',
     companyName: 'Studio FitManaus Personal',
     title: 'Presença Própria + Automação Whats',
     offerName: 'Presença Própria',
@@ -46,6 +58,7 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
   },
   {
     id: 'opp-3',
+    companyId: 'comp-3',
     companyName: 'OdontoArt Manaus',
     title: 'Redesign Web + Otimização LCP 7 dias',
     offerName: 'Presença Própria',
@@ -62,6 +75,7 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
   },
   {
     id: 'opp-4',
+    companyId: 'comp-3',
     companyName: 'OdontoClin Adrianópolis',
     title: 'Projeto Completo e Integração de Agendamento',
     offerName: 'Solução para Clínicas',
@@ -82,15 +96,18 @@ export const INITIAL_PROPOSALS: Proposal[] = [
   {
     id: 'prop-101',
     proposalNumber: 'VIBE-2026-001',
-    clientName: 'Harmonia & Face Estética',
-    clientEmail: 'camila@harmoniaeface.com.br',
-    clientPhone: '(92) 99456-7890',
+    opportunityId: 'opp-3',
+    companyId: 'comp-3',
+    clientName: 'OdontoArt Manaus (Dr. Fernando)',
+    clientEmail: 'fernando@odontoart.com.br',
+    clientPhone: '(92) 99344-5566',
     offerTitle: 'Esteira de Crescimento (Landing Page + 5 Artes/mês)',
     setupValue: 2200,
     recurringValue: 890,
     validUntil: '2026-10-15',
     status: 'ENVIADA',
-    scopeText: 'Desenvolvimento de Landing Page de Alta Conversão, integração com WhatsApp Business, setup de métricas Google Analytics 4 e plano recorrente de 5 artes mensais.',
+    scopeText: 'Desenvolvimento de Landing Page de Alta Conversão, integração com WhatsApp Business, setup de métricas GA4 e plano de 5 artes mensais.',
+    paymentTerms: '50% no aceite e 50% após aprovação visual (SLA 7 dias). Mensalidade via boleto.',
     items: [
       { id: 'item-1', description: 'Setup Landing Page Responsiva (SLA 7 dias)', quantity: 1, unitPrice: 2200, total: 2200 },
       { id: 'item-2', description: 'Plano Recorrente 5 Artes Sociais / Mês', quantity: 1, unitPrice: 890, total: 890 }
@@ -102,6 +119,8 @@ export const INITIAL_PROPOSALS: Proposal[] = [
 export const INITIAL_PROJECTS_FULL: Project[] = [
   {
     id: 'proj-1',
+    leadId: 'lead-4',
+    companyId: 'comp-3',
     nomeEmpresa: 'OdontoClin Adrianópolis',
     clientName: 'Dra. Renata Mello',
     nicho: 'ODONTOLOGIA',
@@ -125,6 +144,8 @@ export const INITIAL_PROJECTS_FULL: Project[] = [
   },
   {
     id: 'proj-2',
+    leadId: 'lead-1',
+    companyId: 'comp-1',
     nomeEmpresa: 'Harmonia & Face Estética',
     clientName: 'Dra. Camila Ramos',
     nicho: 'ESTETICA',
@@ -139,6 +160,7 @@ export const INITIAL_PROJECTS_FULL: Project[] = [
     dataPrevisao: '2026-10-09T10:00:00Z',
     checklistNormas: true,
     ownerName: 'Fernanda Rocha',
+    currentBlocker: 'Aguardando envio do logotipo vetorial e fotos em alta pelo cliente',
     tasks: [
       { id: 'tsk-5', projectId: 'proj-2', title: 'Aguardando envio do logotipo vetorial e fotos em alta', assignedTo: 'Dra. Camila Ramos (Cliente)', dueDate: '2026-10-03', completed: false }
     ]
@@ -149,6 +171,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
   {
     id: 'ctr-1',
     contractNumber: 'CTR-VIBE-089',
+    companyId: 'comp-3',
     companyName: 'OdontoClin Adrianópolis',
     clientName: 'Dra. Renata Mello',
     offerName: 'Plano 5 Artes Mensais',
@@ -165,6 +188,7 @@ export const INITIAL_CONTRACTS: Contract[] = [
   {
     id: 'ctr-2',
     contractNumber: 'CTR-VIBE-074',
+    companyId: 'comp-4',
     companyName: 'Advocacia Castro & Assis',
     clientName: 'Dr. Roberto Castro',
     offerName: 'Esteira de Crescimento (12 artes + Manutenção)',
@@ -200,6 +224,7 @@ export const INITIAL_MEETINGS: Meeting[] = [
 export const INITIAL_COMPLIANCE: ComplianceCheck[] = [
   {
     id: 'cmp-1',
+    projectId: 'proj-1',
     projectName: 'OdontoClin Adrianópolis',
     nicho: 'ODONTOLOGIA',
     identityVerified: true,
@@ -207,7 +232,9 @@ export const INITIAL_COMPLIANCE: ComplianceCheck[] = [
     claimsVerified: true,
     sensitiveDataProtected: true,
     internalApproved: true,
-    notes: 'CRO-AM verificado. Fotos antes/depois aprovadas sob resolução CFO.'
+    reviewerName: 'Fernanda Rocha',
+    reviewedAt: '2026-10-02T11:00:00Z',
+    notes: 'CRO-AM verificado. Fotos antes/depois aprovadas sob resolução CFO 196/2019.'
   },
   {
     id: 'cmp-2',
@@ -218,11 +245,13 @@ export const INITIAL_COMPLIANCE: ComplianceCheck[] = [
     claimsVerified: true,
     sensitiveDataProtected: true,
     internalApproved: true,
-    notes: 'Código de Ética da OAB respeitado. Sem promessa de resultado de causa.'
+    reviewerName: 'Daniel Milk',
+    reviewedAt: '2026-10-01T15:00:00Z',
+    notes: 'Código de Ética da OAB respeitado. Sem promessa de resultado em peças de marketing.'
   }
 ];
 
-// Helper functions for client state management with LocalStorage fallback
+// LocalStorage helpers
 export function getStoredData<T>(key: string, defaultVal: T): T {
   if (typeof window === 'undefined') return defaultVal;
   try {
