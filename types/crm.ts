@@ -129,6 +129,8 @@ export interface Proposal {
   status: ProposalStatus;
   scopeText: string;
   paymentTerms?: string;
+  billingPeriod?: 'MENSAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | 'UNICO';
+  isCustom?: boolean;
   items?: ProposalItem[];
   createdAt: string;
 }
