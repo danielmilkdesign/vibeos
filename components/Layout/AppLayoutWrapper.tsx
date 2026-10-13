@@ -14,7 +14,7 @@ export default function AppLayoutWrapper({
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
-  const isPublicPage = pathname === '/login' || pathname.startsWith('/acesso');
+  const isPublicPage = pathname === '/login' || pathname === '/sobre' || pathname.startsWith('/acesso');
 
   useEffect(() => {
     if (!loading && !isAuthenticated && !isPublicPage) {
