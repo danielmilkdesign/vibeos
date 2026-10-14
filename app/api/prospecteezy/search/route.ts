@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 // Serper Places devolve no máximo PAGE_SIZE resultados por requisição.
 // Para coletar mais, é preciso iterar as páginas (parâmetro `page`).
 const PAGE_SIZE = 10;
+/** Limite máximo de leads retornados por busca. */
+const MAX_RESULTS = 250;
 /**
  * Trava de segurança contra loop infinito / estouro de crédito (só dispara se o
  * Serper nunca devolver uma página parcial — o que não acontece em Places).
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
     // Sem teto no resultado: itera página a página até a fonte acabar.
     // A última página é detectada quando o Serper devolve menos que PAGE_SIZE
     // (ou página vazia) — aí o loop encerra. Dedup evita repetir entre páginas.
-    for (let page = 1; page <= maxPages && !exhausted; page++) {
+    for (let page = 1; page <= Math.min(maxPages, Math.ceil(MAX_RESULTS / PAGE_SIZE)) && !exhausted; page++) {
       const places = await fetchPlacesPage(apiKey, searchQuery, page, location);
       pagesConsumed += 1;
 
@@ -115,6 +117,8 @@ export async function POST(req: NextRequest) {
           category: place.category || place.type || "Outbound Serper",
           status: "novo",
         });
+
+        if (leads.length >= MAX_RESULTS) break;
       }
 
       // Página menor que o tamanho máximo = última página do Serper.
