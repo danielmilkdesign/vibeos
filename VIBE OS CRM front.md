@@ -21,7 +21,7 @@ O frontend deve permitir que a equipe consiga executar o fluxo inteiro da empres
 ```text
 Prospecção
   → Qualificação
-  → Análise de 20 minutos
+  → Análise de 30 minutos
   → Proposta
   → Negociação
   → Fechamento

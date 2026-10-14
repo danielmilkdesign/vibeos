@@ -17,6 +17,17 @@ body {
   overscroll-behavior: none;
 }
 
+@layer base {
+  input, select, textarea {
+    color-scheme: dark;
+    background-color: #0f172a;
+    color: #f8fafc;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #64748b;
+  }
+}
+
 .font-code, .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }

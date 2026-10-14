@@ -28,7 +28,7 @@ A VIBE Design Tech se posiciona como uma empresa de **design, tecnologia, IA e e
 
 - WhatsApp — canal principal de conversão
 - Instagram — descoberta, relacionamento e prova social
-- Site — páginas de segmento, planos e CTA para análise de 20 minutos
+- Site — páginas de segmento, planos e CTA para análise de 30 minutos
 - Indicações — hipótese importante, pois o próprio site menciona dependência de indicação como dor do público
 
 ## 2. Diagnóstico comercial
@@ -37,7 +37,7 @@ A VIBE Design Tech se posiciona como uma empresa de **design, tecnologia, IA e e
 
 1. **Proposta de valor clara:** conecta design, tecnologia e conversão.
 2. **Segmentação comercial:** a mensagem muda conforme o setor do prospect.
-3. **CTA objetivo:** análise de 20 minutos e contato direto no WhatsApp.
+3. **CTA objetivo:** análise de 30 minutos e contato direto no WhatsApp.
 4. **Oferta de entrada e recorrência:** permite aquisição inicial e receita mensal.
 5. **Boa base para qualificação:** segmento, tipo de projeto, urgência e plano desejado podem ser coletados antes da reunião.
 
@@ -45,7 +45,7 @@ A VIBE Design Tech se posiciona como uma empresa de **design, tecnologia, IA e e
 
 1. Leads espalhados entre WhatsApp, Instagram, formulários e indicações.
 2. Falta de histórico único por empresa e por pessoa.
-3. Follow-ups esquecidos após a análise de 20 minutos.
+3. Follow-ups esquecidos após a análise de 30 minutos.
 4. Propostas enviadas sem controle de versão, validade e status.
 5. Confusão entre lead, cliente, projeto e contrato recorrente.
 6. Falta de visão sobre capacidade de produção e entregas mensais.
@@ -67,7 +67,7 @@ A melhor primeira versão não deve ser apenas uma agenda de contatos. Deve ser 
 1. **Novo lead** — entrou por WhatsApp, Instagram, site ou indicação.
 2. **Contato inicial** — primeiro retorno realizado.
 3. **Qualificação** — setor, necessidade, orçamento e prazo registrados.
-4. **Análise agendada** — reunião de 20 minutos marcada.
+4. **Análise agendada** — reunião de 30 minutos marcada.
 5. **Análise realizada** — diagnóstico concluído.
 6. **Proposta em preparação** — solução e investimento sendo montados.
 7. **Proposta enviada** — aguardando retorno.
@@ -355,7 +355,7 @@ Não recomendo começar por um sistema clínico complexo, automação total do W
 4. O CRM será apenas interno ou terá uma área de acesso para clientes?
 5. A cobrança será apenas acompanhada manualmente ou precisa integrar pagamentos?
 6. A produção de conteúdo será gerenciada por ciclo mensal, projeto ou ambos?
-7. Quais dados devem ser obrigatórios para uma análise de 20 minutos?
+7. Quais dados devem ser obrigatórios para uma análise de 30 minutos?
 8. A prioridade é organizar o processo atual ou também automatizar a captação do site?
 
 ## Conclusão

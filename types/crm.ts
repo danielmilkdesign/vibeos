@@ -225,6 +225,7 @@ export interface Meeting {
   id: string;
   companyName: string;
   contactName: string;
+  contactEmail?: string;
   date: string;
   time: string;
   durationMinutes: number;

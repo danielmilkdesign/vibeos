@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIBE OS — PRD & Manual Operacional Completo</title>
+  <meta name="description" content="Documento de Requisitos de Produto (PRD) e Manual Operacional do VIBE OS - Sistema Operacional Comercial, Operacional e de Projetos da VIBE Design Tech.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            sidebar: '#0B101D',
+            surface: '#0D1422',
+            'surface-dim': '#0f131d',
+            'surface-bright': '#353944',
+            'surface-elevated': '#111C2D',
+            'surface-container-lowest': '#0a0e17',
+            'surface-container-low': '#171c25',
+            'surface-container': '#1b2029',
+            'surface-container-high': '#262a34',
+            'surface-container-highest': '#31353f',
+            'border-subtle': '#1E293B',
+            'text-primary': '#F8FAFC',
+            'text-secondary': '#94A3B8',
+            'text-disabled': '#64748B',
+            primary: '#4cd7f6',
+            'primary-hover': '#0891B2',
+            'primary-container': '#06b6d4',
+            secondary: '#c0c1ff',
+            'secondary-container': '#3131c0',
+            tertiary: '#ffb873',
+            success: '#10B981',
+            warning: '#F59E0B',
+            danger: '#F43F5E',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 25px -5px rgba(76, 215, 246, 0.25)',
+            'glow-purple': '0 0 25px -5px rgba(192, 193, 255, 0.2)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0a0e17; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    
+    html { scroll-behavior: smooth; }
+    
+    /* Code styling */
+    pre code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84rem;
+      line-height: 1.6;
+    }
+    
+    /* Print rules for clean executive export */
+    @media print {
+      body { background: white !important; color: #111827 !important; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .sidebar-nav { display: none !important; }
+      .main-content { margin-left: 0 !important; width: 100% !important; max-width: 100% !important; padding: 0 !important; }
+      .card-box { border: 1px solid #e5e7eb !important; background: white !important; box-shadow: none !important; page-break-inside: avoid; }
+      h1, h2, h3 { color: #000 !important; page-break-after: avoid; }
+      a { text-decoration: underline !important; color: #0284c7 !important; }
+    }
+    
+    .glass-card {
+      background: rgba(17, 28, 45, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    
+    .tab-active {
+      border-color: #4cd7f6 !important;
+      color: #4cd7f6 !important;
+      background: rgba(76, 215, 246, 0.08) !important;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-text-primary font-sans antialiased selection:bg-primary/20 selection:text-primary">
+
+  <!-- Progress Bar (Reading Indicator) -->
+  <div id="read-progress" class="fixed top-0 left-0 h-1 bg-gradient-to-r from-primary via-secondary to-tertiary z-50 transition-all duration-150" style="width: 0%;"></div>
+
+  <!-- Top Sticky Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-border-subtle no-print">
+    <div class="max-w-[1720px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center font-black text-white text-base shadow-glow-cyan">
+          V
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-display font-extrabold text-base tracking-tight text-white">VIBE OS</span>
+            <span class="badge-status bg-primary/10 text-primary border border-primary/20">PRD & Manual v1.0</span>
+          </div>
+          <p class="text-[11px] font-mono text-text-secondary">Sistema Operacional • VIBE Design Tech • Manaus, AM</p>
+        </div>
+      </div>
+
+      <!-- Quick View Filter Tabs -->
+      <div class="hidden xl:flex items-center bg-surface-elevated p-1 rounded-xl border border-border-subtle text-xs font-semibold">
+        <button onclick="switchView('all')" id="tab-all" class="tab-btn tab-active px-3 py-1.5 rounded-lg transition-all border border-transparent">
+          📚 Visualização Integral
+        </button>
+        <button onclick="switchView('prd')" id="tab-prd" class="tab-btn px-3 py-1.5 text-text-secondary hover:text-white rounded-lg transition-all border border-transparent">
+          📋 PRD & Especificação
+        </button>
+        <button onclick="switchView('manual')" id="tab-manual" class="tab-btn px-3 py-1.5 text-text-secondary hover:text-white rounded-lg transition-all border border-transparent">
+          📖 Manual do Usuário
+        </button>
+        <button onclick="switchView('architecture')" id="tab-architecture" class="tab-btn px-3 py-1.5 text-text-secondary hover:text-white rounded-lg transition-all border border-transparent">
+          ⚙️ Arquitetura & Banco
+        </button>
+        <button onclick="switchView('simulators')" id="tab-simulators" class="tab-btn px-3 py-1.5 text-text-secondary hover:text-white rounded-lg transition-all border border-transparent">
+          🧮 Simuladores Vivos
+        </button>
+      </div>
+
+      <!-- Search Input & Quick Actions -->
+      <div class="flex items-center gap-2.5">
+        <div class="relative w-48 sm:w-64">
+          <input 
+            type="text" 
+            id="docSearch" 
+            placeholder="Buscar no PRD e Manual..." 
+            class="w-full h-9 pl-8 pr-3 bg-surface-elevated text-xs text-text-primary placeholder:text-text-disabled rounded-lg border border-border-subtle focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
+            oninput="searchContent(this.value)"
+          >
+          <svg class="w-3.5 h-3.5 text-text-disabled absolute left-2.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+
+        <button onclick="window.print()" title="Imprimir ou Salvar em PDF" class="h-9 px-3 bg-surface-elevated hover:bg-surface-bright text-text-primary text-xs font-semibold rounded-lg border border-border-subtle flex items-center gap-1.5 transition-colors">
+          <svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          <span class="hidden sm:inline">Exportar PDF</span>
+        </button>
+
+        <button onclick="copyDocLink()" title="Copiar link do documento" class="h-9 w-9 bg-surface-elevated hover:bg-surface-bright text-text-secondary hover:text-white rounded-lg border border-border-subtle flex items-center justify-center transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container with Fixed Sidebar & Content Area -->
+  <div class="max-w-[1720px] mx-auto flex">
+    
+    <!-- Sidebar Navigation Index (Desktop) -->
+    <aside class="w-72 shrink-0 border-r border-border-subtle bg-sidebar/50 p-6 hidden lg:block sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto no-print">
+      <div class="text-[11px] font-mono uppercase tracking-wider text-text-disabled font-bold mb-3">
+        Índice Estruturado
+      </div>
+      
+      <nav class="space-y-1 text-xs">
+        <div class="pt-1 pb-1 text-[11px] font-mono text-primary font-bold uppercase tracking-wider">Parte I: Visão & PRD</div>
+        <a href="#sec-visao" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">1. Visão Executiva & Contexto</a>
+        <a href="#sec-problema" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">2. O Problema & Solução</a>
+        <a href="#sec-personas" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">3. Personas & Matriz RBAC</a>
+        <a href="#sec-ofertas" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">4. Catálogo de Ofertas & Planos</a>
+        <a href="#sec-requisitos" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">5. Requisitos Funcionais (RF01-14)</a>
+        <a href="#sec-rnf" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">6. Requisitos Não Funcionais & UI</a>
+        
+        <div class="pt-4 pb-1 text-[11px] font-mono text-secondary font-bold uppercase tracking-wider">Parte II: Arquitetura & Dados</div>
+        <a href="#sec-arquitetura" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">7. Arquitetura do Sistema</a>
+        <a href="#sec-modelo-dados" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">8. Modelo de Dados (Prisma Schema)</a>
+        <a href="#sec-cerebro" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">9. O Segundo Cérebro (Obsidian)</a>
+
+        <div class="pt-4 pb-1 text-[11px] font-mono text-tertiary font-bold uppercase tracking-wider">Parte III: Manual do Usuário</div>
+        <a href="#sec-manual-acesso" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">10. Primeiros Passos & Acesso</a>
+        <a href="#sec-manual-prospeccao" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">11. Manual de Prospecção Outbound</a>
+        <a href="#sec-manual-pipeline" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">12. Manual do Pipeline Comercial</a>
+        <a href="#sec-manual-reunioes" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">13. Manual da Análise de 30 Minutos</a>
+        <a href="#sec-manual-propostas" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">14. Manual de Propostas Comerciais</a>
+        <a href="#sec-manual-projetos" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">15. Manual de Operações & SLA</a>
+        <a href="#sec-manual-entregas" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">16. Manual de Entregas & Franquias</a>
+        <a href="#sec-manual-contratos" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">17. Manual de Contratos & MRR</a>
+        
+        <div class="pt-4 pb-1 text-[11px] font-mono text-success font-bold uppercase tracking-wider">Parte IV: Playbooks & Ferramentas</div>
+        <a href="#sec-playbooks" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">18. Playbooks de Abordagem WhatsApp</a>
+        <a href="#sec-simuladores" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">19. Simuladores & Calculadoras</a>
+        <a href="#sec-faq" class="nav-link block px-2.5 py-1.5 rounded-lg text-text-secondary hover:text-white hover:bg-surface-elevated transition-colors">20. FAQ & Resolução de Problemas</a>
+      </nav>
+
+      <!-- Meta stats box -->
+      <div class="mt-8 p-3.5 bg-surface-elevated rounded-xl border border-border-subtle">
+        <div class="text-[11px] font-mono text-text-secondary flex items-center justify-between mb-1.5">
+          <span>STATUS:</span>
+          <span class="text-success font-semibold">HOMOLOGADO</span>
+        </div>
+        <div class="text-[11px] font-mono text-text-secondary flex items-center justify-between mb-1.5">
+          <span>VERSÃO:</span>
+          <span class="text-white font-mono">1.0.0 (Release)</span>
+        </div>
+        <div class="text-[11px] font-mono text-text-secondary flex items-center justify-between">
+          <span>TIMEZONE:</span>
+          <span class="text-white font-mono">America/Manaus</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 min-w-0 p-4 sm:p-8 lg:p-12 space-y-16">
+      
+      <!-- HERO & EXECUTIVE HEADER -->
+      <section id="sec-visao" class="content-section" data-category="prd">
+        <div class="glass-card p-6 sm:p-10 rounded-2xl relative overflow-hidden shadow-2xl">
+          <!-- Background glow accents -->
+          <div class="absolute -right-20 -top-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-secondary/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="relative z-10 space-y-6">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <span class="badge-status bg-primary/15 text-primary border border-primary/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                VIBE OS CORE SPECIFICATION
+              </span>
+              <span class="badge-status bg-white/5 text-text-secondary border border-white/10 font-mono">
+                BRL (R$) • Manaus - AM
+              </span>
+              <span class="badge-status bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                Ambiente de Produção Ativo
+              </span>
+            </div>
+
+            <div class="space-y-3">
+              <h1 class="text-3xl sm:text-5xl font-display font-extrabold text-white tracking-tight leading-tight">
+                VIBE OS — Product Requirements Document (PRD) & Manual do Sistema
+              </h1>
+              <p class="text-base sm:text-lg text-text-secondary max-w-4xl leading-relaxed">
+                Especificação técnica completa, guia de engenharia e manual operacional do Sistema Operacional Comercial, Operacional e de Projetos da <strong class="text-white">VIBE Design Tech</strong>. Concebido para eliminar silos de informação, guiar a prospecção ativa em Manaus e todo o Brasil, automatizar transições de vendas para entregas sem redigitação de dados e ancorar o crescimento de MRR da agência.
+              </p>
+            </div>
+
+            <!-- Executive Quick Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border-subtle">
+              <div class="p-3.5 bg-surface-container-lowest/80 rounded-xl border border-border-subtle">
+                <span class="text-[11px] font-mono text-text-disabled uppercase block">Propósito Central</span>
+                <span class="text-sm font-bold text-white mt-1 block">Lead Outbound → Contrato Recorrente</span>
+              </div>
+              <div class="p-3.5 bg-surface-container-lowest/80 rounded-xl border border-border-subtle">
+                <span class="text-[11px] font-mono text-text-disabled uppercase block">Stack Tecnológica</span>
+                <span class="text-sm font-bold text-primary mt-1 block">Next.js 14 + Tailwind + Prisma + Neon</span>
+              </div>
+              <div class="p-3.5 bg-surface-container-lowest/80 rounded-xl border border-border-subtle">
+                <span class="text-[11px] font-mono text-text-disabled uppercase block">Base de Memória</span>
+                <span class="text-sm font-bold text-secondary mt-1 block">Segundo Cérebro (Obsidian Vault)</span>
+              </div>
+              <div class="p-3.5 bg-surface-container-lowest/80 rounded-xl border border-border-subtle">
+                <span class="text-[11px] font-mono text-text-disabled uppercase block">Regra Suprema</span>
+                <span class="text-sm font-bold text-tertiary mt-1 block">Zero Redigitação & Próximo Passo Obrigatório</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: PROBLEMA & PROPOSTA DE VALOR -->
+      <section id="sec-problema" class="content-section space-y-6" data-category="prd">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono font-bold text-sm">
+            02
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            O Problema, Visão de Negócio & Oportunidade
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- The Problem Card -->
+          <div class="card-box bg-surface p-6 rounded-2xl border border-red-500/20 space-y-4">
+            <div class="flex items-center gap-2.5 text-danger font-semibold text-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <span>A Dor das Agências & Software Houses Tradicionais</span>
+            </div>
+            <p class="text-xs text-text-secondary leading-relaxed">
+              Tradicionalmente, uma consultoria de design e tecnologia perde até 35% de suas oportunidades por desorganização operacional:
+            </p>
+            <ul class="text-xs text-text-secondary space-y-2.5 list-disc list-inside">
+              <li><strong>Leads Dispersos:</strong> Contatos chegam pelo WhatsApp comercial, DM do Instagram, formulários soltos e indicações sem centralização.</li>
+              <li><strong>Ambição sem Próximo Passo:</strong> Oportunidades ficam paradas no pipeline sem data e sem tarefa definida, esfriando o prospect.</li>
+              <li><strong>Follow-ups Esquecidos:</strong> A reunião de "Análise de 30 minutos" é realizada, mas a proposta demora 3 dias para ser enviada e o cliente esquece o interesse.</li>
+              <li><strong>Ruptura Venda → Operação:</strong> Quando o contrato é fechado, o comercial precisa redigitar tudo em planilhas ou Trello, gerando perda de briefing e atrito.</li>
+              <li><strong>Descontrole de Franquias:</strong> Clientes que contratam pacotes recorrentes de 5 ou 12 artes solicitam alterações infinitas sem controle de ciclo mensal.</li>
+            </ul>
+          </div>
+
+          <!-- The Solution Card -->
+          <div class="card-box bg-surface p-6 rounded-2xl border border-primary/20 space-y-4">
+            <div class="flex items-center gap-2.5 text-primary font-semibold text-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>A Solução Estruturada: VIBE OS</span>
+            </div>
+            <p class="text-xs text-text-secondary leading-relaxed">
+              O VIBE OS conecta todo o ciclo de vida comercial e operacional em uma única linha do tempo contínua:
+            </p>
+            <ul class="text-xs text-text-secondary space-y-2.5 list-disc list-inside">
+              <li><strong>Mapeamento Ativo com Diagnóstico:</strong> Prospecta empresas já analisando se têm site, SSL, autoridade no Google e dependência perigosa de redes sociais.</li>
+              <li><strong>Regra do Próximo Passo Obrigatório:</strong> Toda oportunidade aberta deve possuir um próximo passo e data limite; caso contrário, é destacada em vermelho.</li>
+              <li><strong>Geração Instantânea de Propostas:</strong> Criação de propostas em menos de 2 minutos com valores de Setup + Mensalidade pré-configurados.</li>
+              <li><strong>Conversão em 1 Clique (Zero Redigitação):</strong> Ao marcar como "Fechado Ganho", o lead é transformado automaticamente em Cliente, Projeto e Contrato com SLA de 7 dias úteis.</li>
+              <li><strong>Controle de Ciclo & Franquia:</strong> Monitoramento visual das entregas mensais utilizadas vs contratadas com status de aprovação.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Visual Flow Diagram: The Complete Customer Lifecycle -->
+        <div class="p-6 bg-surface-elevated rounded-2xl border border-border-subtle space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white font-display">Fluxo Contínuo de Valor do VIBE OS (Ciclo Comercial & Operacional)</h3>
+            <span class="text-[11px] font-mono text-primary">Unbroken Pipeline</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-center text-[11px] font-mono">
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">1. PROSPECÇÃO</span>
+              <strong class="text-white mt-1">Lead Mapeado</strong>
+              <span class="text-[10px] text-text-secondary mt-1">Diagnóstico SEO</span>
+            </div>
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">2. ABORDAGEM</span>
+              <strong class="text-primary mt-1">WhatsApp / DM</strong>
+              <span class="text-[10px] text-text-secondary mt-1">Script de Dor</span>
+            </div>
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">3. REUNIÃO</span>
+              <strong class="text-secondary mt-1">Análise 30 min</strong>
+              <span class="text-[10px] text-text-secondary mt-1">Qualificação</span>
+            </div>
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">4. OFERTA</span>
+              <strong class="text-tertiary mt-1">Proposta BRL</strong>
+              <span class="text-[10px] text-text-secondary mt-1">Setup + MRR</span>
+            </div>
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">5. FECHAMENTO</span>
+              <strong class="text-success mt-1">Ganho / Sinal</strong>
+              <span class="text-[10px] text-text-secondary mt-1">1-Click Convert</span>
+            </div>
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">6. EXECUÇÃO</span>
+              <strong class="text-white mt-1">Projeto & SLA</strong>
+              <span class="text-[10px] text-text-secondary mt-1">7 Dias Úteis</span>
+            </div>
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">7. RECORRÊNCIA</span>
+              <strong class="text-primary mt-1">Franquia & Artes</strong>
+              <span class="text-[10px] text-text-secondary mt-1">Aprovação Mensal</span>
+            </div>
+            <div class="p-2.5 bg-surface rounded-xl border border-border-subtle flex flex-col justify-between">
+              <span class="text-text-disabled">8. EXPANSÃO</span>
+              <strong class="text-secondary mt-1">Renovação / Upsell</strong>
+              <span class="text-[10px] text-text-secondary mt-1">Alerta em D-30</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: PERSONAS & MATRIZ RBAC -->
+      <section id="sec-personas" class="content-section space-y-6" data-category="prd">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono font-bold text-sm">
+            03
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Personas & Matriz de Controle de Acesso (RBAC)
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          O VIBE OS adota segurança em nível de aplicação (NextAuth + middleware) e banco de dados. Os papéis mapeiam exatamente os cargos operacionais da VIBE Design Tech, impedindo vazamento de dados estratégicos (como faturamento global para produções de design) e mantendo clareza de atribuições.
+        </p>
+
+        <!-- Personas Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">ADMINISTRADOR</span>
+              <span class="badge-status bg-purple-500/10 text-purple-400">Total Root</span>
+            </div>
+            <p class="text-[11px] text-text-secondary">
+              Fundador (Daniel) e diretoria. Possui visão irrestrita de faturamento, margem, configurações de planos, remoção de registros, logs de conformidade e gestão de usuários.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">GESTOR & COMERCIAL</span>
+              <span class="badge-status bg-cyan-500/10 text-cyan-400">Sales Focus</span>
+            </div>
+            <p class="text-[11px] text-text-secondary">
+              Gerente e closers de vendas. Acesso total a prospecção, pipeline de oportunidades, reuniões agendadas e propostas. Comercial regular visualiza apenas oportunidades sob sua custódia.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">OPERAÇÕES & DESIGN</span>
+              <span class="badge-status bg-amber-500/10 text-amber-400">Delivery Focus</span>
+            </div>
+            <p class="text-[11px] text-text-secondary">
+              Gerente de projetos e designers. Acesso ao módulo de projetos, tarefas, cronogramas, quadro de entregas, aprovações de clientes e checklist de conformidade. Não editam valores financeiros.
+            </p>
+          </div>
+        </div>
+
+        <!-- RBAC Granular Matrix Table -->
+        <div class="overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-surface-elevated font-mono text-[11px] text-text-secondary uppercase border-b border-border-subtle">
+              <tr>
+                <th class="p-3.5">Módulo / Domínio</th>
+                <th class="p-3.5">Administrador</th>
+                <th class="p-3.5">Gestor Comercial</th>
+                <th class="p-3.5">Comercial (Closer)</th>
+                <th class="p-3.5">Operações</th>
+                <th class="p-3.5">Design / Conteúdo</th>
+                <th class="p-3.5">Financeiro</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle font-mono text-[11px]">
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Dashboard Geral</td>
+                <td class="p-3.5 text-primary">Completo</td>
+                <td class="p-3.5 text-primary">Comercial</td>
+                <td class="p-3.5 text-primary">Próprio</td>
+                <td class="p-3.5 text-secondary">Operacional</td>
+                <td class="p-3.5 text-secondary">Tarefas</td>
+                <td class="p-3.5 text-tertiary">Financeiro</td>
+              </tr>
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Prospecção & Leads</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-cyan-400">Atribuídos</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+              </tr>
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Pipeline (Kanban)</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-cyan-400">Atribuídos</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+              </tr>
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Propostas Comerciais</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-cyan-400">Criar / Editar Próprias</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-secondary">Leitura & Aprovação</td>
+              </tr>
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Projetos & Tarefas</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-secondary">Atribuídos</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+              </tr>
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Entregas & Franquias</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-secondary">Upload & Envio</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+              </tr>
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Contratos & MRR</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-text-disabled">Somente Leitura</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+              </tr>
+              <tr class="hover:bg-surface-elevated/50">
+                <td class="p-3.5 font-sans font-semibold text-white">Configurações & Equipe</td>
+                <td class="p-3.5 text-success">CRUD Total</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+                <td class="p-3.5 text-text-disabled">Sem Acesso</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 4: CATÁLOGO DE OFERTAS & MODELO COMERCIAL -->
+      <section id="sec-ofertas" class="content-section space-y-6" data-category="prd">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono font-bold text-sm">
+            04
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Catálogo Oficial de Ofertas & Modelo de Receita (BRL)
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          A VIBE Design Tech adota um modelo híbrido inteligente: <strong>Setup Inicial (Cash In imediato para cobrir custo de implantação) + Mensalidade Recorrente (MRR previsível com alta retenção)</strong>. Todos os valores no VIBE OS são configuráveis para permitir reajustes ou propostas sob medida.
+        </p>
+
+        <!-- Offers Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          <!-- Offer 1 -->
+          <div class="card-box bg-surface p-5 rounded-2xl border border-primary/20 flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="badge-status bg-primary/10 text-primary">Oferta de Entrada</span>
+                <span class="text-xs font-mono text-text-disabled">SLA: 7 dias</span>
+              </div>
+              <h3 class="text-base font-bold text-white font-display">Presença Própria</h3>
+              <p class="text-xs text-text-secondary">
+                Site de alta conversão, autoridade própria, eliminação de dependência do Linktree, indexação no Google e botão de agendamento online.
+              </p>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle font-mono text-xs space-y-1">
+              <div class="flex justify-between text-text-secondary">
+                <span>Setup Inicial:</span>
+                <strong class="text-white">R$ 1.500,00</strong>
+              </div>
+              <div class="flex justify-between text-primary">
+                <span>Recorrência Mensal:</span>
+                <strong class="text-primary font-bold">R$ 99,00 /mês</strong>
+              </div>
+              <div class="text-[10px] text-text-disabled pt-1 border-t border-border-subtle">
+                Inclui hospedagem segura, SSL, e-mails e suporte técnico contínuo.
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 2 -->
+          <div class="card-box bg-surface p-5 rounded-2xl border border-secondary/20 flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="badge-status bg-secondary/10 text-secondary">Mais Vendida</span>
+                <span class="text-xs font-mono text-text-disabled">SLA: 10 dias</span>
+              </div>
+              <h3 class="text-base font-bold text-white font-display">Esteira de Crescimento</h3>
+              <p class="text-xs text-text-secondary">
+                Estrutura digital completa com página institucional, páginas de captura, automação de WhatsApp e gestão mensal contínua de criativos.
+              </p>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle font-mono text-xs space-y-1">
+              <div class="flex justify-between text-text-secondary">
+                <span>Setup Inicial:</span>
+                <strong class="text-white">R$ 2.200,00</strong>
+              </div>
+              <div class="flex justify-between text-secondary">
+                <span>Recorrência Mensal:</span>
+                <strong class="text-secondary font-bold">R$ 890,00 /mês</strong>
+              </div>
+              <div class="text-[10px] text-text-disabled pt-1 border-t border-border-subtle">
+                Inclui franquia mensal de design, ajustes e relatórios de tráfego.
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 3 -->
+          <div class="card-box bg-surface p-5 rounded-2xl border border-tertiary/20 flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="badge-status bg-tertiary/10 text-tertiary">Recorrência Pura</span>
+                <span class="text-xs font-mono text-text-disabled">Ciclo: Mensal</span>
+              </div>
+              <h3 class="text-base font-bold text-white font-display">Plano 5 ou 12 Artes</h3>
+              <p class="text-xs text-text-secondary">
+                Franquia mensal de design estético para redes sociais, carrosséis educativos, posts de autoridade e criativos de anúncios patrocinados.
+              </p>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle font-mono text-xs space-y-1">
+              <div class="flex justify-between text-text-secondary">
+                <span>Plano 5 Artes:</span>
+                <strong class="text-white">R$ 500 - R$ 750/mês</strong>
+              </div>
+              <div class="flex justify-between text-tertiary">
+                <span>Plano 12 Artes:</span>
+                <strong class="text-tertiary font-bold">R$ 1.100 - R$ 1.500/mês</strong>
+              </div>
+              <div class="text-[10px] text-text-disabled pt-1 border-t border-border-subtle">
+                Controle rígido de aprovação e saldo não acumulável entre ciclos.
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 4 -->
+          <div class="card-box bg-surface p-5 rounded-2xl border border-border-subtle flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="badge-status bg-emerald-500/10 text-emerald-400">Setor Saúde</span>
+                <span class="text-xs font-mono text-text-disabled">Complexidade Alta</span>
+              </div>
+              <h3 class="text-base font-bold text-white font-display">Soluções para Clínicas</h3>
+              <p class="text-xs text-text-secondary">
+                Estrutura especializada para consultórios médicos e odontológicos, com respeito às normas do CFM/CFO, agenda inteligente e captação de pacientes.
+              </p>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle font-mono text-xs space-y-1">
+              <div class="flex justify-between text-text-secondary">
+                <span>Setup Consultivo:</span>
+                <strong class="text-white">R$ 3.500 - R$ 6.000</strong>
+              </div>
+              <div class="flex justify-between text-emerald-400">
+                <span>Mensalidade:</span>
+                <strong class="text-emerald-400 font-bold">A partir de R$ 450/mês</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 5 -->
+          <div class="card-box bg-surface p-5 rounded-2xl border border-border-subtle flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="badge-status bg-indigo-500/10 text-indigo-400">Sob Medida</span>
+                <span class="text-xs font-mono text-text-disabled">Engenharia Web</span>
+              </div>
+              <h3 class="text-base font-bold text-white font-display">Sistemas Web & Apps</h3>
+              <p class="text-xs text-text-secondary">
+                Desenvolvimento de portais, painéis administrativos, integrações via API, automações com IA e sistemas operacionais personalizados.
+              </p>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle font-mono text-xs space-y-1">
+              <div class="flex justify-between text-text-secondary">
+                <span>Orçamento Base:</span>
+                <strong class="text-white">R$ 5.000 a R$ 25.000+</strong>
+              </div>
+              <div class="flex justify-between text-indigo-400">
+                <span>Sustentação:</span>
+                <strong class="text-indigo-400 font-bold">15% a 20% /ano</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 6: Nichos Atendidos -->
+          <div class="card-box bg-surface p-5 rounded-2xl border border-border-subtle flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="badge-status bg-white/10 text-white">Segmentação</span>
+                <span class="text-xs font-mono text-text-disabled">ICP Prioritário</span>
+              </div>
+              <h3 class="text-base font-bold text-white font-display">Nichos Prioritários</h3>
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="px-2 py-0.5 bg-surface-elevated text-[11px] rounded text-primary border border-primary/20">Estética</span>
+                <span class="px-2 py-0.5 bg-surface-elevated text-[11px] rounded text-secondary border border-secondary/20">Odontologia</span>
+                <span class="px-2 py-0.5 bg-surface-elevated text-[11px] rounded text-tertiary border border-tertiary/20">Medicina</span>
+                <span class="px-2 py-0.5 bg-surface-elevated text-[11px] rounded text-white border border-border-subtle">Advocacia</span>
+                <span class="px-2 py-0.5 bg-surface-elevated text-[11px] rounded text-emerald-400 border border-emerald-500/20">Personal Trainers</span>
+                <span class="px-2 py-0.5 bg-surface-elevated text-[11px] rounded text-text-secondary border border-border-subtle">Contabilidade / BPO</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-text-disabled">
+              Foco inicial em Manaus (AM) e expansão para capitais do Norte/Nordeste e Sudeste.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 5: REQUISITOS FUNCIONAIS (RF01 - RF14) -->
+      <section id="sec-requisitos" class="content-section space-y-6" data-category="prd">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono font-bold text-sm">
+            05
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Especificação Detalhada dos Requisitos Funcionais (RF-01 a RF-14)
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          Cada requisito foi desenhado para resolver um gargalo real de operação da VIBE Design Tech. A tabela abaixo especifica as entradas, regras de processamento e saídas de cada módulo.
+        </p>
+
+        <!-- Requirements Accordion / Grid -->
+        <div class="space-y-3 font-sans">
+          
+          <!-- RF-01 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-01</span>
+                <h3 class="text-sm font-bold text-white">Dashboard Geral & Centro de Operações</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Exibir em tempo real os indicadores consolidados da VIBE Design Tech com atalhos de ação rápida.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Total de empresas mapeadas, pipeline ponderado (50% de probabilidade média) e MRR ativo contratado.</li>
+                <li>Alerta visual pulsante de reuniões do dia e follow-ups comerciais atrasados.</li>
+                <li>Ações rápidas de 1 clique: Criar Lead, Nova Oportunidade, Agendar Análise e Emitir Proposta.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-02 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-02</span>
+                <h3 class="text-sm font-bold text-white">Prospecção Outbound & Auditoria Técnica</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Base operável de empresas prospectadas por segmento em Manaus/AM com diagnóstico de vulnerabilidade digital.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Registro de Autoridade de Domínio (0 a 100), Tráfego Orgânico estimado e percentual de dependência de Instagram (ex: 100% dependente).</li>
+                <li>Cálculo automático de Nível de Urgência: Crítica (sem site ou sem SSL), Alta (apenas linktree/cartão PDF), Média ou Baixa.</li>
+                <li>Botão "Disparar WhatsApp" que abre o WhatsApp Web pré-preenchido com mensagem customizada para o nicho da empresa.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-03 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-03</span>
+                <h3 class="text-sm font-bold text-white">Pipeline Comercial Kanban com "Próximo Passo Obrigatório"</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Visualização em colunas dos estágios de negociação com arrastar-e-soltar e regras inegociáveis de avanço.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Estágios: Lead Novo → Diagnóstico Gerado → Abordado WhatsApp/Email → Reunião Agendada → Proposta Enviada → Fechado Ganho / Fechado Perdido.</li>
+                <li><strong>Regra do Próximo Passo:</strong> Toda oportunidade aberta deve ter obrigatoriamente um texto de próxima ação e uma data estipulada.</li>
+                <li>Ao mover para "Fechado Perdido", exigir motivo obrigatório (Preço, Concorrente, Escopo, Sem Resposta, Outro).</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-04 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-04</span>
+                <h3 class="text-sm font-bold text-white">Agenda & Gestão da "Análise de 30 Minutos"</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Agendamento e condução de chamadas consultivas de qualificação rápida com prospects.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Suporte aos canais: Google Meet, Chamada WhatsApp ou Reunião Presencial.</li>
+                <li>Formulário de preenchimento pós-call: Gargalo identificado, Oferta recomendada e Próxima data de follow-up.</li>
+                <li>Status da reunião: Agendada, Confirmada, Realizada, Cancelada ou No-Show (com alerta para reagendamento).</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-05 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-05</span>
+                <h3 class="text-sm font-bold text-white">Gerador de Propostas Comerciais & Tracking</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Criação padronizada de propostas comerciais da VIBE Design Tech com numeração sequencial única.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Geração de código único: <code>PROP-2026-001</code>, <code>PROP-2026-002</code>, etc.</li>
+                <li>Separação transparente de Valor de Setup (Entrada) e Valor Recorrente Mensal com data de validade (padrão 7 dias).</li>
+                <li>Status da proposta: Rascunho → Em Revisão → Enviada → Visualizada → Em Negociação → Aprovada / Recusada / Expirada.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-06 & RF-07 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-primary/20">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-cyan-500/10 text-cyan-400 font-bold">RF-06 & RF-07</span>
+                <h3 class="text-sm font-bold text-white">Conversão Automática (Zero Redigitação)</h3>
+              </div>
+              <span class="text-[11px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">Core Feature</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Quando uma oportunidade é marcada como "Fechado Ganho" ou a proposta é aprovada, o sistema dispara uma automação em cascata:</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Cria a entidade <strong>Cliente</strong> com o histórico unificado da empresa e contatos de decisores.</li>
+                <li>Cria o <strong>Projeto</strong> correspondente (ex: Presença Própria) já com o checklist de onboarding, responsável de operações e prazo limite calculado com base no SLA (7 dias úteis).</li>
+                <li>Cria o <strong>Contrato Recorrente</strong> com o valor de mensalidade, limite de entregas (franquia) e data de renovação.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-08 & RF-09 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-08 & RF-09</span>
+                <h3 class="text-sm font-bold text-white">Gestão de Projetos, SLA de 7 Dias & Controle de Bloqueios</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Painel de acompanhamento físico do desenvolvimento de websites, landing pages e identidades visuais.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Classificação de risco de atraso: <strong>Normal</strong> (no prazo), <strong>Atenção</strong> (próximo do prazo) ou <strong>Crítico</strong> (atrasado ou bloqueado).</li>
+                <li>Visibilidade clara de <strong>Bloqueio de Cliente</strong>: diferencia tarefas travadas por falta de envio de material pelo cliente daquelas em produção interna da VIBE.</li>
+                <li>Barra de progresso percentual (0 a 100%) calculada pelas tarefas concluídas.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-10 & RF-11 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-10 & RF-11</span>
+                <h3 class="text-sm font-bold text-white">Entregas, Franquia Mensal & Gestão de Contratos (MRR)</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Gestão de franquia de criativos (Planos de 5 ou 12 artes) e faturamento recorrente mensal.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li>Controle de saldo mensal de entregas (ex: 3 de 5 utilizadas no ciclo vigente de Outubro/2026).</li>
+                <li>Fluxo de aprovação da arte: Em Produção → Revisão Interna → Enviada ao Cliente → Ajustes Solicitados → Aprovada → Publicada.</li>
+                <li>Alertas proativos em D-30 antes da renovação contratual para retenção e propostas de upsell.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- RF-12 a RF-14 -->
+          <div class="card-box bg-surface p-4 sm:p-5 rounded-xl border border-border-subtle">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="badge-status bg-primary/10 text-primary font-bold">RF-12 a RF-14</span>
+                <h3 class="text-sm font-bold text-white">Conformidade (LGPD & Conselhos), Relatórios & Configurações</h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Implementado</span>
+            </div>
+            <div class="mt-3 text-xs text-text-secondary space-y-2">
+              <p><strong>Descrição:</strong> Blindagem jurídica de dados, inteligência analítica e parametrização do sistema.</p>
+              <ul class="list-disc list-inside space-y-1 text-text-secondary text-[11px]">
+                <li><strong>Conformidade Setorial:</strong> Verificação ética de antes/depois, promessas de cura (CFM/CFO), consentimento de imagem e base legal LGPD.</li>
+                <li><strong>Relatórios de BI:</strong> Gráficos de conversão por nicho, CAC estimado, tempo médio de fechamento e rentabilidade de projetos.</li>
+                <li><strong>Configurações Globais:</strong> Edição de valores de ofertas, gestão de usuários e trilha de auditoria completa.</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 6: REQUISITOS NÃO FUNCIONAIS & UI DIRECTIVES -->
+      <section id="sec-rnf" class="content-section space-y-6" data-category="prd">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono font-bold text-sm">
+            06
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Requisitos Não Funcionais & Diretrizes de Design Engineering
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          O VIBE OS segue os mais altos padrões de engenharia de software e design de interfaces. Conforme estipulado no documento mestre de governança (<code>SYSTEM_RULES.md</code>), as diretrizes abaixo são inegociáveis.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle space-y-2">
+            <span class="text-xs font-bold text-primary font-mono">RNF-01 • ZERO MAGIC NUMBERS & ZERO HARDCODED COLORS</span>
+            <p class="text-xs text-text-secondary leading-relaxed">
+              É estritamente proibido utilizar tamanhos em pixels arbitrários ou cores hexadecimais soltas nos componentes. Toda estilização deriva dos Design Tokens configurados no Tailwind CSS (ex: <code>bg-surface-elevated</code>, <code>text-primary</code>, <code>border-border-subtle</code>).
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle space-y-2">
+            <span class="text-xs font-bold text-secondary font-mono">RNF-02 • GERENCIAMENTO DE VARIANTES VIA CVA</span>
+            <p class="text-xs text-text-secondary leading-relaxed">
+              Todos os componentes flexíveis de UI utilizam <strong>Class Variance Authority (CVA)</strong> para tipar variantes, tamanhos, estados desabilitados e variantes temáticas de forma limpa e previsível.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle space-y-2">
+            <span class="text-xs font-bold text-tertiary font-mono">RNF-03 • ACESSIBILIDADE WCAG 2.1 AA OBRIGATÓRIA</span>
+            <p class="text-xs text-text-secondary leading-relaxed">
+              Controles interativos possuem feedback visual nítido via teclado (<code>focus-visible:ring-2 focus-visible:ring-primary</code>), contrastes de cor testados acima de 4.5:1 e rótulos semânticos ARIA completos.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle space-y-2">
+            <span class="text-xs font-bold text-success font-mono">RNF-04 • RESILIÊNCIA OPERACIONAL & DUAL-STORAGE</span>
+            <p class="text-xs text-text-secondary leading-relaxed">
+              Arquitetura híbrida com conexão ao <strong>Neon Postgres</strong> via Prisma ORM e camada de persistência reativa local (<code>lib/crm-store.ts</code>) com fallback imediato. A equipe nunca fica travada caso ocorra instabilidade de rede em trânsito.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 7: ARQUITETURA DO SISTEMA -->
+      <section id="sec-arquitetura" class="content-section space-y-6" data-category="architecture">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary font-mono font-bold text-sm">
+            07
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Arquitetura Técnica do Sistema (ADR-001 & ADR-002)
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          O VIBE OS foi concebido como uma Single-Page / Multi-Route Application de altíssima performance estruturada sobre o Next.js 14 App Router, consumindo APIs fortemente tipadas com TypeScript e Prisma ORM.
+        </p>
+
+        <!-- Visual Architecture Layer Diagram -->
+        <div class="p-6 bg-surface-elevated rounded-2xl border border-border-subtle space-y-4">
+          <h3 class="text-sm font-bold text-white font-display">Diagrama de Camadas da Arquitetura VIBE OS</h3>
+          
+          <div class="space-y-3 font-mono text-xs">
+            
+            <!-- Layer 1: Client UI -->
+            <div class="p-4 bg-surface rounded-xl border border-primary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="badge-status bg-primary/10 text-primary mb-1">Camada 1 • Apresentação & UI</span>
+                <div class="text-sm font-bold text-white mt-1">Next.js 14 App Router + React 18 + Tailwind CSS + CVA</div>
+                <div class="text-xs text-text-secondary">Páginas de CRM, Dashboard, Kanban drag-and-drop, modais Radix e ícones Lucide</div>
+              </div>
+              <span class="text-[11px] text-primary shrink-0">Client & Server Components</span>
+            </div>
+
+            <!-- Layer 2: Business Logic & State -->
+            <div class="p-4 bg-surface rounded-xl border border-secondary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="badge-status bg-secondary/10 text-secondary mb-1">Camada 2 • Regras de Negócio & Estado</span>
+                <div class="text-sm font-bold text-white mt-1">Auth Context (RBAC) + API Routes (/api/leads) + CRM Store</div>
+                <div class="text-xs text-text-secondary">Validação de transições de status, cálculo de probabilidade ponderada e cálculo de SLA</div>
+              </div>
+              <span class="text-[11px] text-secondary shrink-0">Next.js API & Edge Runtime</span>
+            </div>
+
+            <!-- Layer 3: Persistence & ORM -->
+            <div class="p-4 bg-surface rounded-xl border border-tertiary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="badge-status bg-tertiary/10 text-tertiary mb-1">Camada 3 • Persistência & Modelagem</span>
+                <div class="text-sm font-bold text-white mt-1">Prisma ORM + Neon Serverless Postgres</div>
+                <div class="text-xs text-text-secondary">Esquema relacional fortemente tipado: Users, Companies, Leads, Deals, Proposals, Projects</div>
+              </div>
+              <span class="text-[11px] text-tertiary shrink-0">PostgreSQL Cloud</span>
+            </div>
+
+            <!-- Layer 4: AI & Knowledge Vault -->
+            <div class="p-4 bg-surface rounded-xl border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="badge-status bg-purple-500/10 text-purple-400 mb-1">Camada 4 • Segundo Cérebro & Agentes de IA</span>
+                <div class="text-sm font-bold text-white mt-1">Obsidian Vault (.vibe/brain) + Antigravity IDE / Orca ADE</div>
+                <div class="text-xs text-text-secondary">Índice Mestre, ADRs, Design Tokens sincronizados e contexto persistente para Squads</div>
+              </div>
+              <span class="text-[11px] text-purple-400 shrink-0">AI Autonomous Agents</span>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 8: MODELO DE DADOS & PRISMA SCHEMA -->
+      <section id="sec-modelo-dados" class="content-section space-y-6" data-category="architecture">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary font-mono font-bold text-sm">
+            08
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Modelo de Dados & Esquema Relacional (Prisma Schema)
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          O arquivo <code class="text-primary font-mono">prisma/schema.prisma</code> materializa todas as entidades comerciais, operacionais e de auditoria da VIBE Design Tech. Abaixo está a especificação completa com enums e relacionamentos.
+        </p>
+
+        <!-- Code Block with Copy Button -->
+        <div class="relative bg-surface rounded-2xl border border-border-subtle overflow-hidden">
+          <div class="bg-surface-elevated px-4 py-2.5 border-b border-border-subtle flex items-center justify-between">
+            <span class="text-xs font-mono text-text-secondary flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
+              prisma/schema.prisma
+            </span>
+            <button onclick="copySnippet('prisma-code')" class="text-xs font-mono text-primary hover:text-white transition-colors flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              Copiar Esquema
+            </button>
+          </div>
+          <pre class="p-4 sm:p-6 overflow-x-auto text-xs text-text-primary font-mono"><code id="prisma-code">// ============================================================================
+// VIBE OS - PRISMA SCHEMA DEFINITION (POSTGRESQL / NEON SERVERLESS)
+// ============================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMINISTRADOR
+  GESTOR_COMERCIAL
+  COMERCIAL
+  OPERACOES
+  DESIGN_CONTEUDO
+  FINANCEIRO
+}
+
+enum LeadStatus {
+  LEAD_NOVO
+  DIAGNOSTICO_GERADO
+  ABORDADO_EMAIL
+  ABORDADO_WHATSAPP
+  REUNIAO_AGENDADA
+  PROPOSTA_ENVIADA
+  FECHADO
+  PERDIDO
+}
+
+enum NichoEnum {
+  ESTETICA
+  ODONTOLOGIA
+  PERSONAL_TRAINER
+  MEDICINA
+  ADVOCACIA
+  OUTROS
+}
+
+enum UrgenciaEnum {
+  CRITICA
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+enum ProposalStatus {
+  RASCUNHO
+  EM_REVISAO
+  ENVIADA
+  VISUALIZADA
+  NEGOCIACAO
+  APROVADA
+  RECUSADA
+  EXPIRADA
+}
+
+enum ProjectStatus {
+  NAO_INICIADO
+  ONBOARDING
+  BRIEFING
+  EM_PLANEJAMENTO
+  EM_PRODUCAO
+  AGUARDANDO_CLIENTE
+  REVISAO_INTERNA
+  EM_APROVACAO
+  PUBLICACAO
+  CONCLUIDO
+  PAUSADO
+}
+
+enum RiskLevel {
+  NORMAL
+  ATENCAO
+  CRITICO
+}
+
+enum ContractStatus {
+  RASCUNHO
+  EM_ASSINATURA
+  ATIVO
+  PAUSADO
+  RENOVACAO_PROXIMA
+  ENCERRADO
+  CANCELADO
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(COMERCIAL)
+  avatarUrl String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id               String        @id @default(uuid())
+  tradeName        String
+  legalName        String?
+  segment          NichoEnum     @default(OUTROS)
+  subsegment       String?
+  city             String        @default("Manaus")
+  state            String        @default("AM")
+  website          String?
+  instagramUrl     String?
+  googleProfileUrl String?
+  status           String        @default("prospect")
+  leads            Lead[]
+  opportunities    Opportunity[]
+  contracts        Contract[]
+  projects         Project[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Lead {
+  id              String        @id @default(uuid())
+  companyId       String?
+  company         Company?      @relation(fields: [companyId], references: [id])
+  nomeEmpresa     String
+  nicho           NichoEnum
+  localizacao     String        @default("Manaus, AM")
+  linkBio         String?
+  status          LeadStatus    @default(LEAD_NOVO)
+  urgencia        UrgenciaEnum  @default(ALTA)
+  
+  authorityScore  Int           @default(0)
+  trafegoOrganico Int           @default(0)
+  palavrasChave   Int           @default(0)
+  percentSocial   Float         @default(100.0)
+  diagnosticoSeo  String?
+
+  nomeDecisor     String?
+  cargoDecisor    String?
+  emailDecisor    String?
+  phoneWhatsapp   String?
+  instagramUrl    String?
+  valorEstimado   Float         @default(2000)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Opportunity {
+  id                String      @id @default(uuid())
+  companyId         String?
+  company           Company?    @relation(fields: [companyId], references: [id])
+  title             String
+  offerName         String
+  setupValue        Float       @default(0)
+  recurringValue    Float       @default(0)
+  estimatedValue    Float       @default(0)
+  probability       Int         @default(20)
+  stage             LeadStatus  @default(LEAD_NOVO)
+  nextAction        String?
+  nextActionDate    DateTime?
+  ownerName         String      @default("Time Comercial")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Proposal {
+  id             String         @id @default(uuid())
+  proposalNumber String         @unique
+  clientName     String
+  clientEmail    String
+  offerTitle     String
+  setupValue     Float
+  recurringValue Float
+  validUntil     DateTime
+  status         ProposalStatus @default(RASCUNHO)
+  scopeText      String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Project {
+  id              String        @id @default(uuid())
+  companyId       String?
+  company         Company?      @relation(fields: [companyId], references: [id])
+  name            String
+  clientName      String
+  nicho           NichoEnum     @default(OUTROS)
+  projectType     String        @default("Presença Própria")
+  status          ProjectStatus @default(ONBOARDING)
+  riskLevel       RiskLevel     @default(NORMAL)
+  progress        Int           @default(0)
+  totalValue      Float
+  downPayment     Float
+  slaDays         Int           @default(7)
+  startDate       DateTime      @default(now())
+  dueDate         DateTime
+  checklistNormas  Boolean       @default(false)
+  ownerName       String        @default("Operações VIBE")
+  tasks           Task[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  assignedTo  String
+  dueDate     DateTime
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Contract {
+  id             String         @id @default(uuid())
+  companyId      String?
+  company        Company?       @relation(fields: [companyId], references: [id])
+  contractNumber String         @unique
+  clientName     String
+  offerName      String
+  setupValue     Float          @default(0)
+  recurringValue Float          @default(0)
+  billingPeriod  String         @default("MENSAL")
+  dueDay         Int            @default(10)
+  deliveryLimit  Int            @default(5)
+  status         ContractStatus @default(ATIVO)
+  startDate      DateTime       @default(now())
+  renewalDate    DateTime
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- SECTION 9: O SEGUNDO CÉREBRO (OBSIDIAN & AGENTES IA) -->
+      <section id="sec-cerebro" class="content-section space-y-6" data-category="architecture">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary font-mono font-bold text-sm">
+            09
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            O Segundo Cérebro: Obsidian Vault & Memória Persistente de IA
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          O VIBE OS integra nativamente um <strong>Segundo Cérebro de Conhecimento</strong> localizado no diretório <code class="text-primary font-mono">D:\vibe-os\.vibe\brain</code>. Esse cofre atua como a memória perpétua e base de contexto para os agentes autônomos de IA (Antigravity IDE e Orca ADE), além de permitir navegação visual via Obsidian Canvas.
+        </p>
+
+        <!-- Obsidian Structure Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-5 bg-surface rounded-xl border border-border-subtle space-y-3 font-mono text-xs">
+            <span class="text-xs font-bold text-white font-sans flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+              Mapa de Pastas do Vault Obsidian
+            </span>
+            <div class="space-y-1.5 text-text-secondary">
+              <div>📁 <strong>00_INDEX.md</strong> → Context Router & Índice Mestre</div>
+              <div>🎨 <strong>00_VIBEOS_BRAIN_CANVAS.canvas</strong> → Grafo visual interativo</div>
+              <div>🏛️ <strong>01_ARCHITECTURE/</strong> → ADR-001 (Stack), ADR-002 (Auth), Schema Map</div>
+              <div>🎨 <strong>02_DESIGN_SYSTEM/</strong> → tokens_manifest.json, CVA patterns, a11y</div>
+              <div>🚀 <strong>03_PRODUCT_KNOWLEDGE/</strong> → Visão do Produto, CRM spec, fluxos</div>
+              <div>🤝 <strong>04_CLIENTS_REGISTRY/</strong> → Framework de entrega para clientes</div>
+              <div>🤖 <strong>05_AGENTS_MEMORY/</strong> → System Rules e contexto de Squads</div>
+            </div>
+          </div>
+
+          <div class="p-5 bg-surface rounded-xl border border-border-subtle space-y-3">
+            <span class="text-xs font-bold text-white font-sans flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              Isolamento de Memória por Squads
+            </span>
+            <div class="space-y-2 text-xs text-text-secondary">
+              <p><strong>1. VibeOS Core Squad:</strong> Responsável pela evolução do sistema operacional, do design system e da inteligência do CRM. Consome e atualiza as trilhas de Arquitetura e Produto.</p>
+              <p><strong>2. Client Solutions Squad:</strong> Responsável por instanciar e entregar soluções personalizadas para clientes da VIBE Design Tech (ex: clínicas, advogados, contabilidade), seguindo o contrato <code>CLIENT_SPEC.template.md</code>.</p>
+              <p><strong>3. Sincronização Bi-direcional:</strong> Alterações salvas no Obsidian refletem instantaneamente no contexto dos agentes de engenharia de software.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 10: MANUAL DO USUÁRIO - PRIMEIROS PASSOS & ACESSO -->
+      <section id="sec-manual-acesso" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            10
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual de Operações • Primeiros Passos & Acesso
+          </h2>
+        </div>
+
+        <div class="card-box bg-surface p-6 rounded-2xl border border-border-subtle space-y-4">
+          <h3 class="text-base font-bold text-white font-display">1. Como Acessar o Sistema</h3>
+          <ol class="list-decimal list-inside space-y-2 text-xs text-text-secondary leading-relaxed">
+            <li>Abra o navegador e acesse a URL oficial de produção: <a href="https://vibeos-os.vercel.app/" target="_blank" class="text-primary underline">https://vibeos-os.vercel.app/</a> ou seu ambiente local configurado.</li>
+            <li>Na tela de autenticação (<code class="text-white font-mono">/login</code>), insira suas credenciais corporativas atribuídas pela diretoria.</li>
+            <li>Após o login, o sistema identificará automaticamente seu papel (RBAC) e carregará os módulos correspondentes. Administradores podem alternar perfis em tempo real no rodapé da Sidebar para testes de usabilidade.</li>
+            <li>Certifique-se de que seu fuso horário no dispositivo esteja alinhado com <strong class="text-white">America/Manaus (UTC-4)</strong> para que os alertas de reuniões e prazos de SLA não sofram distorções.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- SECTION 11: MANUAL DE PROSPECÇÃO OUTBOUND -->
+      <section id="sec-manual-prospeccao" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            11
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual do Módulo de Prospecção Outbound & Auditoria Técnica
+          </h2>
+        </div>
+
+        <div class="space-y-4">
+          <div class="p-6 bg-surface rounded-2xl border border-border-subtle space-y-3">
+            <h3 class="text-sm font-bold text-white font-display">Passo a Passo da Caça de Oportunidades:</h3>
+            <ol class="list-decimal list-inside space-y-2 text-xs text-text-secondary leading-relaxed">
+              <li><strong>Acesse a aba "Prospecção Outbound" (<code class="text-white font-mono">/prospeccao</code>):</strong> Esta tela lista todas as empresas mapeadas em Manaus divididas por nicho (Estética, Odontologia, Medicina, Advocacia, Personal, etc.).</li>
+              <li><strong>Filtre por Nível de Urgência:</strong> Priorize sempre leads classificados como <span class="badge-status bg-red-500/10 text-red-400">CRÍTICA</span> ou <span class="badge-status bg-amber-500/10 text-amber-400">ALTA</span>. Esses negócios não possuem site ou dependem 100% de link do Instagram, estando expostos à perda de autoridade e clientes.</li>
+              <li><strong>Analise o Diagnóstico SEO & Social:</strong> Clique no card do lead para visualizar:
+                <ul class="list-disc list-inside pl-5 mt-1 space-y-1">
+                  <li><strong>Authority Score:</strong> Se for menor que 10, a empresa é invisível no Google.</li>
+                  <li><strong>Dependência Social:</strong> Se marcar 100%, a empresa depende unicamente do Instagram para vender.</li>
+                  <li><strong>Gargalo Principal:</strong> Ex: <em>"Sem botão de agendamento online, perda de 40% de conversão"</em>.</li>
+                </ul>
+              </li>
+              <li><strong>Iniciar Abordagem via WhatsApp:</strong> Clique no botão <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono text-[11px]">Abrir WhatsApp</span>. O VIBE OS abrirá uma conversa direta com a cópia personalizada já carregada para o comercial apenas clicar em Enviar.</li>
+              <li><strong>Mover para o Pipeline:</strong> Assim que o lead responder ou demonstrar interesse, clique em <strong>"Transformar em Oportunidade"</strong> para criar o card correspondente no Kanban.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 12: MANUAL DO PIPELINE COMERCIAL -->
+      <section id="sec-manual-pipeline" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            12
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual do Pipeline Comercial & A Regra do Próximo Passo
+          </h2>
+        </div>
+
+        <div class="card-box bg-surface p-6 rounded-2xl border border-border-subtle space-y-4">
+          <h3 class="text-sm font-bold text-white font-display">Operação das Colunas do Funil:</h3>
+          <p class="text-xs text-text-secondary leading-relaxed">
+            O Pipeline (<code class="text-white font-mono">/pipeline</code>) organiza visualmente as etapas comerciais da VIBE Design Tech. A movimentação dos cards pode ser feita por drag-and-drop ou clicando na oportunidade.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div class="p-4 bg-surface-elevated rounded-xl border border-red-500/20 space-y-2">
+              <span class="text-xs font-bold text-danger font-mono">A REGRA INEGOCIÁVEL DO PRÓXIMO PASSO</span>
+              <p class="text-xs text-text-secondary leading-relaxed">
+                Toda oportunidade mantida nas etapas ativas (Lead Novo, Diagnóstico, Abordado, Reunião, Proposta) <strong>DEVE possuir uma tarefa descritiva e uma data limite</strong> (ex: <em>"Ligar para Dr. Marcelo na quinta-feira às 14h para cobrar retorno da proposta"</em>). Oportunidades com datas vencidas ficam com alerta vermelho piscante e rebaixam o score de produtividade do closer.
+              </p>
+            </div>
+
+            <div class="p-4 bg-surface-elevated rounded-xl border border-primary/20 space-y-2">
+              <span class="text-xs font-bold text-primary font-mono">PROBABILIDADE & RECEITA PONDERADA</span>
+              <p class="text-xs text-text-secondary leading-relaxed">
+                À medida que a oportunidade avança de coluna, a probabilidade sobe de 15% (Lead Novo) para 40% (Reunião Agendada) e 80% (Proposta Enviada). O Dashboard calcula a Receita Ponderada multiplicando o valor estimado pela probabilidade, gerando previsibilidade real de caixa.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 13: MANUAL DA ANÁLISE DE 20 MINUTOS -->
+      <section id="sec-manual-reunioes" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            13
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual de Condução da Reunião de Análise de 30 Minutos
+          </h2>
+        </div>
+
+        <div class="card-box bg-surface p-6 rounded-2xl border border-border-subtle space-y-4">
+          <p class="text-xs text-text-secondary leading-relaxed">
+            A <strong>"Análise de 30 Minutos"</strong> é o principal ativo de conversão da VIBE Design Tech. Não é uma reunião chata de vendas, mas uma sessão de consultoria cirúrgica onde mostramos ao decisor onde a empresa dele está perdendo dinheiro na internet.
+          </p>
+
+          <div class="space-y-3 font-mono text-xs">
+            <div class="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center shrink-0">1</span>
+              <div>
+                <strong class="text-white block font-sans">Minutos 0 a 5: Rapport & O Diagnóstico Atual</strong>
+                <span class="text-text-secondary font-sans text-xs">Abra o site ou Instagram do prospect na tela. Destaque: "Hoje quem procura seu serviço no Google encontra seu concorrente primeiro" ou "Seu Instagram está com link quebrado".</span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-secondary/20 text-secondary font-bold flex items-center justify-center shrink-0">2</span>
+              <div>
+                <strong class="text-white block font-sans">Minutos 5 a 12: A Apresentação da Visão "Presença Própria"</strong>
+                <span class="text-text-secondary font-sans text-xs">Mostre como a VIBE estrutura uma página própria de autoridade, com carregamento em menos de 1 segundo, integração com WhatsApp e posicionamento de clínica/empresa premium.</span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-tertiary/20 text-tertiary font-bold flex items-center justify-center shrink-0">3</span>
+              <div>
+                <strong class="text-white block font-sans">Minutos 12 a 17: A Escolha do Plano (Setup + Recorrência)</strong>
+                <span class="text-text-secondary font-sans text-xs">Apresente a oferta: Presença Própria (R$ 1.500 setup + R$ 99/mês) ou Esteira de Crescimento (R$ 2.200 setup + R$ 890/mês). Ancore no valor de retorno: "Um único paciente ou cliente novo que você fechar já paga o setup inteiro".</span>
+              </div>
+            </div>
+
+            <div class="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex items-start gap-3">
+              <span class="w-6 h-6 rounded-full bg-success/20 text-success font-bold flex items-center justify-center shrink-0">4</span>
+              <div>
+                <strong class="text-white block font-sans">Minutos 17 a 20: Fechamento & Envio da Proposta</strong>
+                <span class="text-text-secondary font-sans text-xs">Abra a tela de propostas no VIBE OS e gere o link enquanto o decisor ainda está na chamada: "Estou te mandando o resumo e o link de confirmação aqui no WhatsApp agora".</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 14: MANUAL DE PROPOSTAS COMERCIAIS -->
+      <section id="sec-manual-propostas" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            14
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual de Emissão de Propostas & Regras de Cobrança
+          </h2>
+        </div>
+
+        <div class="space-y-4">
+          <div class="p-6 bg-surface rounded-2xl border border-border-subtle space-y-3">
+            <h3 class="text-sm font-bold text-white font-display">Diretrizes de Elaboração de Propostas:</h3>
+            <ul class="text-xs text-text-secondary space-y-2 list-disc list-inside leading-relaxed">
+              <li><strong>Numeração Sequencial Automática:</strong> Nunca crie propostas em Word ou PDF avulso. Use o gerador do VIBE OS em <code class="text-white font-mono">/propostas</code> para garantir o número de registro rastreável (ex: <code>PROP-2026-042</code>).</li>
+              <li><strong>Prazo de Validade Rigoroso:</strong> O prazo padrão de validade é de <strong>7 dias corridos</strong>. Após essa data, o status muda automaticamente para <span class="badge-status bg-red-500/10 text-red-400">EXPIRADA</span>, permitindo renegociação ou liberação da agenda da equipe de design.</li>
+              <li><strong>Discriminação de Escopo:</strong> Especifique com precisão as entregas incluídas (ex: Criação de 1 Landing Page de alta conversão, Integração com Meta Pixel, Configuração de domínio próprio e 5 criativos para o mês de lançamento).</li>
+              <li><strong>Condição de Pagamento Padrão:</strong> 50% de sinal na aprovação para início imediato do onboarding e 50% na entrega e publicação. Recorrência cobrada todo dia 10 do mês.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 15: MANUAL DE OPERAÇÕES & SLA -->
+      <section id="sec-manual-projetos" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            15
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual de Operações • Entrega de Projetos com SLA de 7 Dias
+          </h2>
+        </div>
+
+        <div class="card-box bg-surface p-6 rounded-2xl border border-border-subtle space-y-4">
+          <h3 class="text-sm font-bold text-white font-display">A Linha de Montagem de Alta Velocidade da VIBE:</h3>
+          <p class="text-xs text-text-secondary leading-relaxed">
+            Projetos fechados não podem demorar meses. O compromisso de marca da VIBE Design Tech para a oferta <strong>Presença Própria</strong> é a entrega completa em <strong>7 dias úteis</strong> a partir do recebimento dos materiais do cliente.
+          </p>
+
+          <!-- 7-Day Timeline Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-7 gap-2 text-center text-xs font-mono pt-2">
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="text-primary font-bold block">Dia 1</span>
+              <strong class="text-white text-[11px] mt-1 block">Onboarding</strong>
+              <span class="text-[10px] text-text-disabled mt-1 block">Formulário & Coleta de Acessos</span>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="text-primary font-bold block">Dia 2</span>
+              <strong class="text-white text-[11px] mt-1 block">Wireframe</strong>
+              <span class="text-[10px] text-text-disabled mt-1 block">Estrutura & Copy de Conversão</span>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="text-primary font-bold block">Dia 3</span>
+              <strong class="text-white text-[11px] mt-1 block">UI Design</strong>
+              <span class="text-[10px] text-text-disabled mt-1 block">Layout de Alto Impacto</span>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="text-primary font-bold block">Dia 4</span>
+              <strong class="text-white text-[11px] mt-1 block">Frontend</strong>
+              <span class="text-[10px] text-text-disabled mt-1 block">Next.js / Tailwind Dev</span>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="text-primary font-bold block">Dia 5</span>
+              <strong class="text-white text-[11px] mt-1 block">Integração</strong>
+              <span class="text-[10px] text-text-disabled mt-1 block">WhatsApp, SEO & Analytics</span>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="text-primary font-bold block">Dia 6</span>
+              <strong class="text-white text-[11px] mt-1 block">Homologação</strong>
+              <span class="text-[10px] text-text-disabled mt-1 block">Aprovação do Cliente</span>
+            </div>
+            <div class="p-3 bg-surface-elevated rounded-xl border border-border-subtle border-emerald-500/30">
+              <span class="text-emerald-400 font-bold block">Dia 7</span>
+              <strong class="text-white text-[11px] mt-1 block">Publicação</strong>
+              <span class="text-[10px] text-emerald-400 mt-1 block">Domínio no Ar & Go Live!</span>
+            </div>
+          </div>
+
+          <div class="p-3 bg-surface-container-low rounded-xl border border-border-subtle text-xs text-text-secondary">
+            <strong class="text-white">Gerenciamento de Bloqueios:</strong> Se o cliente não enviar as fotos ou logotipo em até 48 horas após o Dia 1, o projeto deve ser marcado no VIBE OS como <span class="badge-status bg-amber-500/10 text-amber-400">AGUARDANDO_CLIENTE</span>. Isso pausa a contagem do SLA interno, protegendo o time de operações.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 16: MANUAL DE ENTREGAS & FRANQUIAS -->
+      <section id="sec-manual-entregas" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            16
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual de Gestão de Entregas & Franquias Mensais de Conteúdo
+          </h2>
+        </div>
+
+        <div class="card-box bg-surface p-6 rounded-2xl border border-border-subtle space-y-4">
+          <h3 class="text-sm font-bold text-white font-display">Operação das Franquias de 5 ou 12 Artes:</h3>
+          <p class="text-xs text-text-secondary leading-relaxed">
+            Clientes que contratam recorrência de design possuem um saldo de entregas por ciclo mensal (ex: 2026-10). O módulo de entregas (<code class="text-white font-mono">/entregas</code>) organiza a esteira de criação e impede refações infinitas.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div class="p-4 bg-surface-elevated rounded-xl border border-border-subtle space-y-2">
+              <strong class="text-white block font-sans">1. Planejamento do Ciclo</strong>
+              <p class="text-text-secondary">
+                No dia 1º de cada mês, o gestor de operações cria as tarefas de criativos correspondentes à franquia contratada (5 ou 12) associadas ao contrato vigente.
+              </p>
+            </div>
+            <div class="p-4 bg-surface-elevated rounded-xl border border-border-subtle space-y-2">
+              <strong class="text-white block font-sans">2. Ciclo de Aprovação</strong>
+              <p class="text-text-secondary">
+                A arte passa por: <span class="text-primary font-mono">Em Produção</span> → <span class="text-secondary font-mono">Revisão Interna</span> → <span class="text-tertiary font-mono">Enviada ao Cliente</span>. O cliente tem até 2 rodadas de ajustes inclusas.
+              </p>
+            </div>
+            <div class="p-4 bg-surface-elevated rounded-xl border border-border-subtle space-y-2">
+              <strong class="text-white block font-sans">3. Não Cumulatividade</strong>
+              <p class="text-text-secondary">
+                Artes não solicitadas pelo cliente até o encerramento do ciclo mensal expiram e não acumulam para o mês seguinte, conforme cláusula contratual da VIBE.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 17: MANUAL DE CONTRATOS & MRR -->
+      <section id="sec-manual-contratos" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary font-mono font-bold text-sm">
+            17
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Manual de Gestão de Contratos, Cobrança & Retenção de MRR
+          </h2>
+        </div>
+
+        <div class="card-box bg-surface p-6 rounded-2xl border border-border-subtle space-y-4">
+          <p class="text-xs text-text-secondary leading-relaxed">
+            O faturamento recorrente (MRR) é o coração da estabilidade financeira da VIBE Design Tech. A tela de contratos (<code class="text-white font-mono">/contratos</code>) monitora a saúde das assinaturas.
+          </p>
+
+          <div class="space-y-3 text-xs text-text-secondary">
+            <div class="flex items-start gap-3 p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
+              <div>
+                <strong class="text-white">Data Fixa de Vencimento:</strong> Todas as assinaturas recorrentes de hospedagem (R$ 99) ou esteira de crescimento (R$ 890) vencem no dia 10 de cada mês via Pix ou boleto bancário.
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></span>
+              <div>
+                <strong class="text-white">Alerta de Renovação em D-30:</strong> 30 dias antes do término da vigência anual do contrato, o VIBE OS gera uma notificação prioritária para o gestor comercial propor a renovação antecipada com plano expandido (Upsell).
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-surface-elevated rounded-xl border border-border-subtle">
+              <span class="w-2 h-2 rounded-full bg-red-400 mt-1.5 shrink-0"></span>
+              <div>
+                <strong class="text-white">Protocolo de Inadimplência:</strong> Em caso de atraso superior a 15 dias no pagamento da mensalidade, o status do contrato passa para <span class="badge-status bg-red-500/10 text-red-400">PAUSADO</span> e a produção de novas artes e suporte de hospedagem são suspensos automaticamente.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 18: PLAYBOOKS DE ABORDAGEM WHATSAPP -->
+      <section id="sec-playbooks" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm">
+            18
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Playbooks Oficiais de Abordagem WhatsApp da VIBE
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          Copie e dispare as abordagens validadas para os decisores diretamente pelo VIBE OS. Todas as mensagens são construídas sob o modelo: <strong>Observação Específica + Dor Latente + Oferta Sem Risco (Análise de 30min)</strong>.
+        </p>
+
+        <!-- Scripts Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Script 1: Clínicas / Saúde -->
+          <div class="p-5 bg-surface rounded-2xl border border-border-subtle space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="badge-status bg-cyan-500/10 text-primary">Nicho: Clínicas / Medicina</span>
+              <button onclick="copySnippet('copy-medica')" class="text-xs font-mono text-primary hover:text-white transition-colors">Copiar Copy</button>
+            </div>
+            <pre class="p-3 bg-surface-elevated rounded-xl text-xs text-text-secondary font-mono whitespace-pre-wrap"><code id="copy-medica">Olá, Dr(a). [Nome do Médico/Gestor]! Aqui é o Daniel da VIBE Design Tech de Manaus.
+
+Estava analisando o perfil da [Nome da Clínica] no Google e percebi que quando pacientes buscam por [especialidade] na nossa região, a clínica não aparece na primeira página e o perfil do Instagram depende de um link genérico sem agendamento direto.
+
+Nós ajudamos clínicas de Manaus a estruturarem sua Presença Própria com agendamento online e alta autoridade.
+
+Gostaria de te apresentar uma análise de 30 minutos gratuita mostrando exatamente como corrigir isso e captar pacientes particulares todos os dias. Você tem 15 minutos livres amanhã às 14h ou sexta às 10h?</code></pre>
+          </div>
+
+          <!-- Script 2: Odontologia -->
+          <div class="p-5 bg-surface rounded-2xl border border-border-subtle space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="badge-status bg-secondary/10 text-secondary">Nicho: Odontologia</span>
+              <button onclick="copySnippet('copy-odonto')" class="text-xs font-mono text-secondary hover:text-white transition-colors">Copiar Copy</button>
+            </div>
+            <pre class="p-3 bg-surface-elevated rounded-xl text-xs text-text-secondary font-mono whitespace-pre-wrap"><code id="copy-odonto">Olá, Dr(a). [Nome]! Tudo bem?
+
+Acompanho o trabalho do consultório de vocês aqui em Manaus. Notei que vocês produzem conteúdos excelentes de procedimentos, mas hoje estão reféns do algoritmo do Instagram sem um site próprio veloz que converta pacientes no Google.
+
+Montamos uma estrutura visual moderna com botão de WhatsApp direto para a sua secretária que dobra a taxa de agendamento de primeiras consultas.
+
+Podemos marcar uma rápida conversa de 30 minutos nesta semana para eu te mostrar como clínicas odontológicas estão usando essa estrutura? Abraços!</code></pre>
+          </div>
+
+          <!-- Script 3: Advocacia -->
+          <div class="p-5 bg-surface rounded-2xl border border-border-subtle space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="badge-status bg-amber-500/10 text-tertiary">Nicho: Advocacia / Jurídico</span>
+              <button onclick="copySnippet('copy-advocacia')" class="text-xs font-mono text-tertiary hover:text-white transition-colors">Copiar Copy</button>
+            </div>
+            <pre class="p-3 bg-surface-elevated rounded-xl text-xs text-text-secondary font-mono whitespace-pre-wrap"><code id="copy-advocacia">Prezado Dr. [Nome do Advogado], bom dia.
+
+Sou da VIBE Design Tech, aqui em Manaus. Estive avaliando a presença digital do seu escritório e notei uma grande oportunidade de posicionamento institucional em conformidade com as regras do Código de Ética da OAB.
+
+Muitos clientes com causas de alto valor hoje pesquisam no Google antes de entrar em contato e encontram escritórios com sites desatualizados ou sem certificado SSL seguro.
+
+Desenvolvemos plataformas institucionais sóbrias e de altíssima autoridade. Posso te enviar uma demonstração de como ficaria a presença digital do seu escritório?</code></pre>
+          </div>
+
+          <!-- Script 4: Follow-up D+2 Pós-Proposta -->
+          <div class="p-5 bg-surface rounded-2xl border border-border-subtle space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="badge-status bg-emerald-500/10 text-emerald-400">Follow-up D+2 (Pós-Proposta)</span>
+              <button onclick="copySnippet('copy-followup')" class="text-xs font-mono text-emerald-400 hover:text-white transition-colors">Copiar Copy</button>
+            </div>
+            <pre class="p-3 bg-surface-elevated rounded-xl text-xs text-text-secondary font-mono whitespace-pre-wrap"><code id="copy-followup">Olá, [Nome do Decisor]! Tudo bem?
+
+Passando para checar se você conseguiu dar uma olhada na proposta PROP-[Número] que te enviei na terça-feira com os detalhes do projeto de Presença Própria da [Nome da Empresa].
+
+Nossa squad está fechando o cronograma de implantação da próxima semana e queria garantir que conseguimos colocar seu site no ar dentro do prazo de 7 dias úteis.
+
+Ficou alguma dúvida sobre o escopo ou sobre as condições de setup + mensalidade?</code></pre>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 19: SIMULADORES & FERRAMENTAS VIVAS -->
+      <section id="sec-simuladores" class="content-section space-y-6" data-category="simulators">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono font-bold text-sm">
+            19
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Ferramentas Interativas & Simuladores Operacionais
+          </h2>
+        </div>
+
+        <p class="text-xs text-text-secondary leading-relaxed">
+          Utilize as calculadoras embutidas abaixo para projetar o crescimento financeiro da VIBE Design Tech e testar a automação de SLA de projetos em tempo real.
+        </p>
+
+        <!-- SIMULATOR 1: PIPELINE & MRR CALCULATOR -->
+        <div class="glass-card p-6 sm:p-8 rounded-2xl border border-primary/30 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-subtle pb-4">
+            <div>
+              <h3 class="text-lg font-bold text-white font-display flex items-center gap-2">
+                <span>🧮 Simulador de Pipeline Comercial & Projeção de MRR</span>
+                <span class="badge-status bg-primary/10 text-primary">Live Calculator</span>
+              </h3>
+              <p class="text-xs text-text-secondary">Arraste os sliders para ver a projeção de faturamento de Setup imediato e receita recorrente anual da VIBE.</p>
+            </div>
+            <button onclick="resetSimulator()" class="text-xs font-mono text-text-disabled hover:text-white transition-colors">Resetar Valores</button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Sliders Column -->
+            <div class="space-y-5 text-xs">
+              
+              <div class="space-y-2">
+                <div class="flex justify-between font-mono">
+                  <span class="text-text-secondary">Leads Mapeados / Mês:</span>
+                  <strong id="val-leads" class="text-white text-sm">40 empresas</strong>
+                </div>
+                <input type="range" id="input-leads" min="10" max="200" step="5" value="40" oninput="calculateSimulator()" class="w-full accent-primary bg-surface-elevated h-2 rounded-lg cursor-pointer">
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex justify-between font-mono">
+                  <span class="text-text-secondary">Taxa de Reuniões Realizadas (Análises 30min):</span>
+                  <strong id="val-conv-reuniao" class="text-primary text-sm">25% (10 reuniões)</strong>
+                </div>
+                <input type="range" id="input-conv-reuniao" min="5" max="50" step="1" value="25" oninput="calculateSimulator()" class="w-full accent-primary bg-surface-elevated h-2 rounded-lg cursor-pointer">
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex justify-between font-mono">
+                  <span class="text-text-secondary">Taxa de Fechamento de Propostas (Win Rate):</span>
+                  <strong id="val-winrate" class="text-secondary text-sm">30% (3 novos clientes/mês)</strong>
+                </div>
+                <input type="range" id="input-winrate" min="10" max="60" step="5" value="30" oninput="calculateSimulator()" class="w-full accent-secondary bg-surface-elevated h-2 rounded-lg cursor-pointer">
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex justify-between font-mono">
+                  <span class="text-text-secondary">Ticket Médio de Setup (Entrada):</span>
+                  <strong id="val-setup" class="text-tertiary text-sm">R$ 1.800,00</strong>
+                </div>
+                <input type="range" id="input-setup" min="1000" max="5000" step="100" value="1800" oninput="calculateSimulator()" class="w-full accent-tertiary bg-surface-elevated h-2 rounded-lg cursor-pointer">
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex justify-between font-mono">
+                  <span class="text-text-secondary">Ticket Médio de Recorrência (MRR/cliente):</span>
+                  <strong id="val-mrr" class="text-emerald-400 text-sm">R$ 350,00 /mês</strong>
+                </div>
+                <input type="range" id="input-mrr" min="99" max="1500" step="25" value="350" oninput="calculateSimulator()" class="w-full accent-emerald-400 bg-surface-elevated h-2 rounded-lg cursor-pointer">
+              </div>
+
+            </div>
+
+            <!-- Results Output Column -->
+            <div class="bg-surface p-6 rounded-2xl border border-border-subtle flex flex-col justify-between space-y-6">
+              
+              <div class="space-y-4">
+                <span class="text-xs font-mono text-text-disabled uppercase tracking-wider block">Projeção de Faturamento VIBE</span>
+                
+                <div class="p-4 bg-surface-elevated rounded-xl border border-primary/20">
+                  <span class="text-[11px] font-mono text-text-secondary">Cash-In Mensal de Setup (Projetos Novos):</span>
+                  <div id="res-setup-mensal" class="text-2xl sm:text-3xl font-bold font-mono text-primary mt-1">R$ 5.400,00</div>
+                  <span class="text-[10px] text-text-disabled">Receita imediata para custeio operacional</span>
+                </div>
+
+                <div class="p-4 bg-surface-elevated rounded-xl border border-secondary/20">
+                  <span class="text-[11px] font-mono text-text-secondary">Novo MRR Adicionado por Mês:</span>
+                  <div id="res-novo-mrr" class="text-2xl font-bold font-mono text-secondary mt-1">+ R$ 1.050,00 /mês</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                  <div class="p-3 bg-surface-container-lowest rounded-lg border border-border-subtle">
+                    <span class="text-[10px] font-mono text-text-disabled block">MRR em 6 Meses:</span>
+                    <strong id="res-mrr-6m" class="text-base font-mono text-emerald-400 font-bold block mt-0.5">R$ 6.300,00/m</strong>
+                  </div>
+                  <div class="p-3 bg-surface-container-lowest rounded-lg border border-border-subtle">
+                    <span class="text-[10px] font-mono text-text-disabled block">MRR em 12 Meses:</span>
+                    <strong id="res-mrr-12m" class="text-base font-mono text-emerald-400 font-bold block mt-0.5">R$ 12.600,00/m</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-surface-container-lowest rounded-lg border border-emerald-500/20 text-xs font-mono text-text-secondary">
+                <span class="text-emerald-400 font-bold">Faturamento Total em 1 Ano (Setup + MRR):</span>
+                <div id="res-faturamento-anual" class="text-xl font-bold text-white mt-1">R$ 146.700,00</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- SIMULATOR 2: CALCULADORA DE RISCO DE SLA DE PROJETO -->
+        <div class="card-box bg-surface p-6 rounded-2xl border border-border-subtle space-y-4">
+          <h3 class="text-base font-bold text-white font-display flex items-center gap-2">
+            <span>⚡ Calculadora e Validador de Risco de SLA</span>
+            <span class="badge-status bg-tertiary/10 text-tertiary font-mono">Project Health</span>
+          </h3>
+          <p class="text-xs text-text-secondary">Simule o cálculo de risco de atraso de um projeto para ver como o algoritmo classifica em <code class="text-white">Normal</code>, <code class="text-amber-400">Atenção</code> ou <code class="text-red-400">Crítico</code>.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-mono">
+            <div>
+              <label class="block text-text-secondary mb-1">Prazo Contratado (Dias):</label>
+              <input type="number" id="sla-total" value="7" class="w-full h-9 px-3 bg-surface-elevated text-white rounded-lg border border-border-subtle font-mono text-xs focus:outline-none focus:border-primary" oninput="calcProjectRisk()">
+            </div>
+            <div>
+              <label class="block text-text-secondary mb-1">Dias Decorridos:</label>
+              <input type="number" id="sla-decorrido" value="5" class="w-full h-9 px-3 bg-surface-elevated text-white rounded-lg border border-border-subtle font-mono text-xs focus:outline-none focus:border-primary" oninput="calcProjectRisk()">
+            </div>
+            <div>
+              <label class="block text-text-secondary mb-1">Progresso Realizado (%):</label>
+              <input type="number" id="sla-progresso" value="40" class="w-full h-9 px-3 bg-surface-elevated text-white rounded-lg border border-border-subtle font-mono text-xs focus:outline-none focus:border-primary" oninput="calcProjectRisk()">
+            </div>
+            <div>
+              <label class="block text-text-secondary mb-1">Aguardando Cliente?</label>
+              <select id="sla-bloqueio" class="w-full h-9 px-3 bg-surface-elevated text-white rounded-lg border border-border-subtle font-mono text-xs focus:outline-none focus:border-primary" onchange="calcProjectRisk()">
+                <option value="false">Não (Produção VIBE)</option>
+                <option value="true">Sim (Material Pendente)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="sla-result-box" class="p-4 rounded-xl border border-border-subtle bg-surface-elevated flex items-center justify-between text-xs font-mono">
+            <div>
+              <span class="text-text-secondary block">Classificação de Risco Automática:</span>
+              <strong id="sla-risk-label" class="text-base text-amber-400 font-bold mt-0.5 block">ATENÇÃO — Risco Moderado de Atraso</strong>
+            </div>
+            <div id="sla-risk-action" class="text-text-secondary text-right max-w-sm hidden sm:block">
+              Faltam 2 dias e o progresso está abaixo de 60%. Priorizar entrega na sprint diária.
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SECTION 20: FAQ & RESOLUÇÃO DE PROBLEMAS -->
+      <section id="sec-faq" class="content-section space-y-6" data-category="manual">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-text-disabled/10 border border-text-disabled/20 flex items-center justify-center text-text-secondary font-mono font-bold text-sm">
+            20
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            Perguntas Frequentes (FAQ) & Resolução de Problemas
+          </h2>
+        </div>
+
+        <div class="space-y-3 font-sans">
+          
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle">
+            <h3 class="text-xs font-bold text-white">1. O que fazer quando o decisor visualizou a proposta mas não respondeu há 48 horas?</h3>
+            <p class="text-xs text-text-secondary mt-1.5 leading-relaxed">
+              Dispare o Script de Follow-up D+2 disponível na Seção 18. Não envie apenas uma interrogação solta; ancore escassez profissional informando que a squad de desenvolvimento está fechando o cronograma de entregas da próxima semana e que você precisa da confirmação para segurar o prazo de 7 dias úteis.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle">
+            <h3 class="text-xs font-bold text-white">2. Como cadastrar um lead que possui múltiplos sócios ou decisores?</h3>
+            <p class="text-xs text-text-secondary mt-1.5 leading-relaxed">
+              No VIBE OS, o registro da <strong>Empresa</strong> (ex: Clínica Odonto Prime) é soberano. Cadastre a empresa primeiro no módulo de Empresas (<code class="text-primary font-mono">/empresas</code>) e depois adicione múltiplos decisores com seus respectivos cargos e telefones na aba de contatos vinculados.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle">
+            <h3 class="text-xs font-bold text-white">3. O cliente solicitou refações de artes além da franquia mensal. O que fazer?</h3>
+            <p class="text-xs text-text-secondary mt-1.5 leading-relaxed">
+              O VIBE OS trava o avanço de novos cards quando a franquia do ciclo é atingida (ex: 5 de 5 artes utilizadas). O gestor de operações deve emitir uma proposta avulsa de "Arte Adicional" (R$ 80 a R$ 120 por arte avulsa) ou sugerir o upgrade para o Plano de 12 Artes.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle">
+            <h3 class="text-xs font-bold text-white">4. Como o sistema sincroniza os dados do banco na nuvem com o navegador?</h3>
+            <p class="text-xs text-text-secondary mt-1.5 leading-relaxed">
+              O VIBE OS utiliza uma arquitetura híbrida de resiliência. Quando o banco Neon Postgres está online, as rotas de API em <code class="text-primary font-mono">/api/*</code> gravam e consultam via Prisma ORM. Simultaneamente, o estado é espelhado no cache local (<code class="text-primary font-mono">lib/crm-store.ts</code>) garantindo renderização instantânea sem telas em branco.
+            </p>
+          </div>
+
+          <div class="p-4 bg-surface rounded-xl border border-border-subtle">
+            <h3 class="text-xs font-bold text-white">5. Como atualizar novos Design Tokens e garantir que os agentes de IA respeitem?</h3>
+            <p class="text-xs text-text-secondary mt-1.5 leading-relaxed">
+              Basta editar o arquivo mestre <code class="text-primary font-mono">.vibe/brain/02_DESIGN_SYSTEM/tokens_manifest.json</code> no Obsidian ou no repositório. Como os agentes do Antigravity IDE consultam o Segundo Cérebro como passo obrigatório pré-código, qualquer novo token de cor ou espaçamento é imediatamente assimilado.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="pt-12 border-t border-border-subtle text-xs text-text-secondary space-y-4 no-print">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded-md bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs">
+              V
+            </div>
+            <span class="font-bold text-white">VIBE OS • VIBE Design Tech</span>
+          </div>
+          <div class="font-mono text-[11px] text-text-disabled">
+            Documento de Requisitos de Produto (PRD) & Manual de Operações • v1.0.0
+          </div>
+        </div>
+        <p class="text-[11px] text-text-disabled leading-relaxed">
+          Propriedade intelectual de VIBE Design Tech. Desenvolvido para orquestração interna, gestão de squads de IA e excelência comercial em Manaus, Amazonas, Brasil.
+        </p>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+  <script>
+    // Reading Progress Bar
+    window.addEventListener('scroll', () => {
+      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('read-progress').style.width = scrolled + '%';
+      
+      // Update ScrollSpy active nav link
+      updateScrollSpy();
+    });
+
+    // ScrollSpy active link update
+    function updateScrollSpy() {
+      const sections = document.querySelectorAll('.content-section');
+      const navLinks = document.querySelectorAll('.nav-link');
+      let currentSectionId = '';
+
+      sections.forEach(sec => {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= 120 && rect.bottom >= 120) {
+          currentSectionId = sec.getAttribute('id');
+        }
+      });
+
+      if (currentSectionId) {
+        navLinks.forEach(link => {
+          if (link.getAttribute('href') === '#' + currentSectionId) {
+            link.classList.add('text-primary', 'bg-surface-elevated', 'font-semibold');
+            link.classList.remove('text-text-secondary');
+          } else {
+            link.classList.remove('text-primary', 'bg-surface-elevated', 'font-semibold');
+            link.classList.add('text-text-secondary');
+          }
+        });
+      }
+    }
+
+    // View Switching Tabs (PRD vs Manual vs All)
+    function switchView(view) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+      const activeBtn = document.getElementById('tab-' + view);
+      if (activeBtn) activeBtn.classList.add('tab-active');
+
+      const sections = document.querySelectorAll('.content-section');
+      sections.forEach(sec => {
+        const cat = sec.getAttribute('data-category');
+        if (view === 'all') {
+          sec.style.display = 'block';
+        } else if (view === 'prd' && cat === 'prd') {
+          sec.style.display = 'block';
+        } else if (view === 'manual' && cat === 'manual') {
+          sec.style.display = 'block';
+        } else if (view === 'architecture' && cat === 'architecture') {
+          sec.style.display = 'block';
+        } else if (view === 'simulators' && cat === 'simulators') {
+          sec.style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    }
+
+    // Instant In-Document Search
+    function searchContent(query) {
+      const term = query.toLowerCase().trim();
+      const sections = document.querySelectorAll('.content-section');
+      
+      if (!term) {
+        sections.forEach(s => s.style.display = 'block');
+        return;
+      }
+
+      sections.forEach(sec => {
+        const text = sec.innerText.toLowerCase();
+        if (text.includes(term)) {
+          sec.style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    }
+
+    // Snippet & Code Copy Helper
+    function copySnippet(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copiado para a área de transferência com sucesso!');
+      }).catch(err => {
+        console.error('Falha ao copiar:', err);
+      });
+    }
+
+    // Document Link Copy
+    function copyDocLink() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        alert('Link do documento copiado!');
+      });
+    }
+
+    // Simulator 1 Calculation Logic
+    function calculateSimulator() {
+      const leads = parseInt(document.getElementById('input-leads').value, 10);
+      const convReuniao = parseInt(document.getElementById('input-conv-reuniao').value, 10) / 100;
+      const winRate = parseInt(document.getElementById('input-winrate').value, 10) / 100;
+      const setup = parseFloat(document.getElementById('input-setup').value);
+      const mrr = parseFloat(document.getElementById('input-mrr').value);
+
+      // Label updates
+      document.getElementById('val-leads').innerText = leads + ' empresas';
+      const reunioesCount = Math.round(leads * convReuniao);
+      document.getElementById('val-conv-reuniao').innerText = Math.round(convReuniao * 100) + '% (' + reunioesCount + ' reuniões)';
+      const novosClientes = Math.max(1, Math.round(reunioesCount * winRate));
+      document.getElementById('val-winrate').innerText = Math.round(winRate * 100) + '% (' + novosClientes + ' novos clientes/mês)';
+      document.getElementById('val-setup').innerText = 'R$ ' + setup.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      document.getElementById('val-mrr').innerText = 'R$ ' + mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' /mês';
+
+      // Calculations
+      const setupMensal = novosClientes * setup;
+      const novoMrrMensal = novosClientes * mrr;
+      const mrr6m = novoMrrMensal * 6;
+      const mrr12m = novoMrrMensal * 12;
+
+      // Cumulative revenue in 12 months (setup * 12 + cumulative MRR)
+      // Month 1: 1*novoMrr, Month 2: 2*novoMrr ... Month 12: 12*novoMrr = novoMrr * (1+12)*12/2 = novoMrr * 78
+      const mrrAnualTotal = novoMrrMensal * 78;
+      const faturamentoTotalAno = (setupMensal * 12) + mrrAnualTotal;
+
+      // DOM Updates
+      document.getElementById('res-setup-mensal').innerText = 'R$ ' + setupMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      document.getElementById('res-novo-mrr').innerText = '+ R$ ' + novoMrrMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' /mês';
+      document.getElementById('res-mrr-6m').innerText = 'R$ ' + mrr6m.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '/m';
+      document.getElementById('res-mrr-12m').innerText = 'R$ ' + mrr12m.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '/m';
+      document.getElementById('res-faturamento-anual').innerText = 'R$ ' + faturamentoTotalAno.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    }
+
+    function resetSimulator() {
+      document.getElementById('input-leads').value = 40;
+      document.getElementById('input-conv-reuniao').value = 25;
+      document.getElementById('input-winrate').value = 30;
+      document.getElementById('input-setup').value = 1800;
+      document.getElementById('input-mrr').value = 350;
+      calculateSimulator();
+    }
+
+    // Simulator 2 Calculation Logic (SLA & Risk)
+    function calcProjectRisk() {
+      const totalDays = parseInt(document.getElementById('sla-total').value, 10) || 7;
+      const elapsedDays = parseInt(document.getElementById('sla-decorrido').value, 10) || 0;
+      const progress = parseInt(document.getElementById('sla-progresso').value, 10) || 0;
+      const isBlocked = document.getElementById('sla-bloqueio').value === 'true';
+
+      const labelEl = document.getElementById('sla-risk-label');
+      const actionEl = document.getElementById('sla-risk-action');
+      const boxEl = document.getElementById('sla-result-box');
+
+      const expectedProgress = Math.min(100, Math.round((elapsedDays / totalDays) * 100));
+      const remainingDays = totalDays - elapsedDays;
+
+      if (isBlocked) {
+        labelEl.className = 'text-base text-amber-400 font-bold mt-0.5 block';
+        labelEl.innerText = 'AGUARDANDO CLIENTE — SLA Pausado';
+        actionEl.innerText = 'Cobrar material pendente com o decisor via WhatsApp. SLA interno congelado.';
+        boxEl.className = 'p-4 rounded-xl border border-amber-500/30 bg-surface-elevated flex items-center justify-between text-xs font-mono';
+        return;
+      }
+
+      if (elapsedDays > totalDays) {
+        labelEl.className = 'text-base text-red-400 font-bold mt-0.5 block';
+        labelEl.innerText = 'CRÍTICO — Projeto em Atraso (' + Math.abs(remainingDays) + ' dias)';
+        actionEl.innerText = 'Acionar diretoria imediatamente. Alocar designer sênior para entrega emergencial.';
+        boxEl.className = 'p-4 rounded-xl border border-red-500/30 bg-surface-elevated flex items-center justify-between text-xs font-mono';
+      } else if (progress < (expectedProgress - 25) || (remainingDays <= 2 && progress < 70)) {
+        labelEl.className = 'text-base text-amber-400 font-bold mt-0.5 block';
+        labelEl.innerText = 'ATENÇÃO — Risco Alto de Descumprimento de SLA';
+        actionEl.innerText = 'Faltam ' + remainingDays + ' dias e o progresso está em ' + progress + '%. Priorizar na daily de hoje.';
+        boxEl.className = 'p-4 rounded-xl border border-amber-500/30 bg-surface-elevated flex items-center justify-between text-xs font-mono';
+      } else {
+        labelEl.className = 'text-base text-emerald-400 font-bold mt-0.5 block';
+        labelEl.innerText = 'NORMAL — Projeto Saudável no Prazo';
+        actionEl.innerText = 'Ritmo alinhado ao cronograma de 7 dias úteis. Prosseguir para a próxima entrega.';
+        boxEl.className = 'p-4 rounded-xl border border-emerald-500/30 bg-surface-elevated flex items-center justify-between text-xs font-mono';
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      calculateSimulator();
+      calcProjectRisk();
+    });
+  </script>
+</body>
+</html>

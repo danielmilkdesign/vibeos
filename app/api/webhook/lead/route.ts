@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const diagnostico =
       payload.mensagem ||
       payload.diagnostico ||
-      `Lead recebido do site oficial (Interesse: ${ofertaInteresse}). Solicitação de Análise de 20 minutos.`;
+      `Lead recebido do site oficial (Interesse: ${ofertaInteresse}). Solicitação de Análise de 30 minutos.`;
 
     try {
       const newLead = await prisma.lead.create({

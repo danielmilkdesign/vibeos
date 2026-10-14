@@ -6,7 +6,12 @@ import { getStoredData, setStoredData, INITIAL_MEETINGS } from '../../lib/crm-st
 import { Meeting } from '../../types/crm';
 
 export default function AgendaPage() {
-  const [meetings, setMeetings] = useState<Meeting[]>(() => getStoredData('vibe_meetings', INITIAL_MEETINGS));
+  const [meetings, setMeetings] = useState<Meeting[]>(() =>
+    getStoredData<Meeting[]>('vibe_meetings', INITIAL_MEETINGS).map((meeting) => ({
+      ...meeting,
+      durationMinutes: 30,
+    }))
+  );
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
@@ -14,6 +19,7 @@ export default function AgendaPage() {
   // New Meeting Form State
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('15:00');
 
@@ -30,9 +36,10 @@ export default function AgendaPage() {
       id: `mtg-${Date.now()}`,
       companyName,
       contactName: contactName || 'Decisor a confirmar',
+      contactEmail: contactEmail || undefined,
       date: date || new Date().toISOString().split('T')[0],
       time: time || '14:30',
-      durationMinutes: 20,
+      durationMinutes: 30,
       meetingUrl: 'https://meet.google.com/vibe-os-analise',
       channel: 'GOOGLE_MEET',
       assignedTo: 'Victor Belichar (Comercial)',
@@ -45,6 +52,7 @@ export default function AgendaPage() {
     setIsScheduleModalOpen(false);
     setCompanyName('');
     setContactName('');
+    setContactEmail('');
   };
 
   const handleSaveDiagnosticSubmit = (e: React.FormEvent) => {
@@ -76,7 +84,7 @@ export default function AgendaPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-400 text-[11px] font-mono">
-              Sessão Diagnóstica de 20 Minutos
+              Sessão Diagnóstica de 30 Minutos
             </span>
           </div>
           <h1 className="text-2xl font-extrabold text-slate-100">
@@ -134,6 +142,9 @@ export default function AgendaPage() {
                   <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                     <User className="w-3.5 h-3.5" /> Decisor: {meeting.contactName}
                   </p>
+                  {meeting.contactEmail && (
+                    <p className="text-xs text-slate-400 truncate">E-mail: {meeting.contactEmail}</p>
+                  )}
                 </div>
 
                 <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 text-xs space-y-1">
@@ -179,7 +190,7 @@ export default function AgendaPage() {
       {isScheduleModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-100">Agendar Reunião de 20 Minutos</h3>
+            <h3 className="text-base font-bold text-slate-100">Agendar Reunião de 30 Minutos</h3>
             <form onSubmit={handleScheduleSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Empresa</label>
@@ -201,6 +212,18 @@ export default function AgendaPage() {
                   onChange={(e) => setContactName(e.target.value)}
                   placeholder="Ex: Dra. Juliana Vieira"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="contact-email" className="block text-xs font-semibold text-slate-300 mb-1">E-mail do decisor</label>
+                <input
+                  id="contact-email"
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="Ex: juliana@empresa.com.br"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500"
                 />
               </div>
 

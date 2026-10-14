@@ -9,6 +9,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        background: '#070B14',
+        foreground: '#F8FAFC',
+        card: '#0D1422',
+        'card-foreground': '#F8FAFC',
+        muted: '#111C2D',
+        'muted-foreground': '#94A3B8',
+        border: '#1E293B',
+        input: '#0F172A',
+        ring: '#06B6D4',
         sidebar: '#0B101D',
         surface: '#0D1422',
         'surface-dim': '#0f131d',

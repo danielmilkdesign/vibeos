@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
       address: place.address || null,
       website: place.website || null,
       rating: place.rating || null,
+      ratingCount: place.ratingCount || place.userRatingsTotal || null,
       category: place.category || "Outbound Serper",
       status: "novo",
     }));

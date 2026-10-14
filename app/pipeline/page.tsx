@@ -123,7 +123,7 @@ export default function PipelinePage() {
       stage: newStage as any,
       estimatedValue: Number(newValue),
       probability: newStage === 'QUALIFICADO' ? 30 : newStage === 'ANALISE_AGENDADA' ? 50 : 70,
-      nextAction: 'Agendar diagnóstico inicial de 20 min',
+      nextAction: 'Agendar diagnóstico inicial de 30 min',
       nextActionDate: new Date(Date.now() + 2 * 86400000).toISOString(),
       ownerName: user?.name || 'Daniel Leite',
       createdAt: new Date().toISOString(),

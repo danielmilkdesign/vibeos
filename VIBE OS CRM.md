@@ -22,7 +22,7 @@ O fluxo central do produto é:
 Empresa mapeada
   → Lead qualificado
   → Contato realizado
-  → Análise de 20 minutos
+  → Análise de 30 minutos
   → Proposta
   → Negociação
   → Cliente ganho
@@ -484,7 +484,7 @@ O sistema não deve disparar mensagens automaticamente sem que o usuário config
 
 ---
 
-## 6.6 Agenda e análise de 20 minutos
+## 6.6 Agenda e análise de 30 minutos
 
 ### Dados da reunião
 
