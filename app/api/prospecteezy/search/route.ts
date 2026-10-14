@@ -3,8 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 // Serper Places devolve no máximo PAGE_SIZE resultados por requisição.
 // Para coletar mais, é preciso iterar as páginas (parâmetro `page`).
 const PAGE_SIZE = 10;
-/** Teto de páginas por execução — protege o crédito Serper do usuário. */
-const MAX_PAGES_PER_RUN = 20;
+/**
+ * Trava de segurança contra loop infinito / estouro de crédito (só dispara se o
+ * Serper nunca devolver uma página parcial — o que não acontece em Places).
+ * Configurável via SERPER_MAX_PAGES. Padrão alto: 250 páginas ≈ 2.500 leads.
+ */
+const MAX_PAGES_PER_RUN = 250;
 const REQUEST_TIMEOUT_MS = 20_000;
 
 interface SerperPlace {
@@ -62,7 +66,7 @@ async function fetchPlacesPage(apiKey: string, query: string, page: number, loca
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, location, limit = 20 } = await req.json();
+    const { query, location } = await req.json();
 
     const apiKey = process.env.SERPER_API_KEY;
     if (!apiKey) {
@@ -72,20 +76,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const desired = Math.min(Math.max(Number(limit) || 20, 1), 5000);
     const searchQuery = location ? `${query} em ${location}` : query;
-    // Só pede as páginas necessárias para atingir `desired`, com teto de crédito.
-    const maxPages = Math.min(Math.ceil(desired / PAGE_SIZE), MAX_PAGES_PER_RUN);
+
+    // Trava de segurança de páginas (anti-loop/custo), configurável por env.
+    const envMax = Number(process.env.SERPER_MAX_PAGES);
+    const maxPages = Number.isFinite(envMax) && envMax > 0 ? Math.floor(envMax) : MAX_PAGES_PER_RUN;
 
     const seen = new Set<string>();
     const leads: any[] = [];
     let pagesConsumed = 0;
     let exhausted = false;
 
-    // Loop de paginação: cada página traz até PAGE_SIZE items.
-    // Para quando: atingir o alvo, página vazia, ou página menor que PAGE_SIZE
-    // (sinal de que o Serper não tem mais resultados — é a última página).
-    for (let page = 1; page <= maxPages && leads.length < desired; page++) {
+    // Sem teto no resultado: itera página a página até a fonte acabar.
+    // A última página é detectada quando o Serper devolve menos que PAGE_SIZE
+    // (ou página vazia) — aí o loop encerra. Dedup evita repetir entre páginas.
+    for (let page = 1; page <= maxPages && !exhausted; page++) {
       const places = await fetchPlacesPage(apiKey, searchQuery, page, location);
       pagesConsumed += 1;
 
@@ -110,14 +115,11 @@ export async function POST(req: NextRequest) {
           category: place.category || place.type || "Outbound Serper",
           status: "novo",
         });
-
-        if (leads.length >= desired) break;
       }
 
       // Página menor que o tamanho máximo = última página do Serper.
       if (places.length < PAGE_SIZE) {
         exhausted = true;
-        break;
       }
     }
 

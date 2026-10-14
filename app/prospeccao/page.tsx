@@ -77,7 +77,7 @@ export default function ProspeccaoPage() {
       const res = await fetch("/api/prospecteezy/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, location: loc, limit: 20 }),
+        body: JSON.stringify({ query: q, location: loc }),
       });
 
       const data = await res.json();
