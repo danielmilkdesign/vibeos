@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col font-sans">
+      <body className="bg-[#080C14] text-slate-100 min-h-screen antialiased flex flex-col font-sans">
         <AuthProvider>
           <AppLayoutWrapper>{children}</AppLayoutWrapper>
         </AuthProvider>

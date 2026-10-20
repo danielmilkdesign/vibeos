@@ -23,23 +23,23 @@ export default function AppLayoutWrapper({
   }, [loading, isAuthenticated, isPublicPage, router]);
 
   if (isPublicPage) {
-    return <main className="min-h-screen w-full bg-[#070B14]">{children}</main>;
+    return <main className="min-h-screen w-full bg-[#080C14] text-slate-100">{children}</main>;
   }
 
-  // If still checking authentication or unauthenticated, show sleek security gate
+  // If still checking authentication or unauthenticated, show sleek minimal gate
   if (loading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#070B14] flex flex-col items-center justify-center text-[#06B6D4] gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#06B6D4]" />
-        <span className="text-xs font-mono text-[#64748B] tracking-wider uppercase">
-          Validando sessão VIBE OS...
+      <div className="min-h-screen bg-[#080C14] flex flex-col items-center justify-center text-slate-400 gap-3">
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/[0.08] border-t-cyan-400" />
+        <span className="text-xs text-slate-400 tracking-wide">
+          Carregando VIBE OS...
         </span>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-[#070B14]">
+    <div className="flex min-h-screen bg-[#080C14] text-slate-100 selection:bg-cyan-500/20 selection:text-cyan-300">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />

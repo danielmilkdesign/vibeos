@@ -15,11 +15,12 @@ import {
   FileText,
   Briefcase,
   Calendar,
-  AlertTriangle,
+  AlertCircle,
   Clock,
-  ExternalLink,
   LogOut,
-  Sparkles
+  Send,
+  Zap,
+  PackageCheck
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { getStoredData } from '../../lib/crm-store';
@@ -73,32 +74,32 @@ export default function Navbar() {
 
   const navCategories = [
     {
-      title: '1. Comercial',
+      title: 'Comercial',
       items: [
         { href: '/', label: 'Visão Geral' },
-        { href: '/prospeccao', label: 'Prospecção Outbound' },
-        { href: '/pipeline', label: 'Pipeline Kanban' },
+        { href: '/prospeccao', label: 'Prospecção' },
+        { href: '/pipeline', label: 'Pipeline' },
         { href: '/agenda', label: 'Agenda & Reuniões' },
       ],
     },
     {
-      title: '2. Relacionamento',
+      title: 'Relacionamento',
       items: [
         { href: '/empresas', label: 'Empresas & Contatos' },
         { href: '/clientes', label: 'Clientes' },
-        { href: '/propostas', label: 'Propostas Comerciais' },
+        { href: '/propostas', label: 'Propostas' },
       ],
     },
     {
-      title: '3. Operação',
+      title: 'Operação',
       items: [
-        { href: '/projetos', label: 'Projetos & SLA' },
+        { href: '/projetos', label: 'Projetos' },
         { href: '/tarefas', label: 'Tarefas' },
-        { href: '/entregas', label: 'Entregas & Aprovações' },
+        { href: '/entregas', label: 'Entregas' },
       ],
     },
     {
-      title: '4. Gestão',
+      title: 'Gestão',
       items: [
         { href: '/contratos', label: 'Contratos & MRR' },
         { href: '/conformidade', label: 'Conformidade' },
@@ -108,12 +109,15 @@ export default function Navbar() {
     },
   ];
 
+  const userName = user?.name || 'Daniel Leite';
+  const userInitials = userName.split(' ').map((n) => n[0]).slice(0, 2).join('');
+
   return (
-    <header className="h-16 bg-surface/90 backdrop-blur-md border-b border-border-subtle px-4 lg:px-8 flex items-center justify-between gap-4 sticky top-0 z-40">
+    <header className="h-14 bg-[#090D16]/90 backdrop-blur-md border-b border-white/[0.06] px-4 lg:px-8 flex items-center justify-between gap-4 sticky top-0 z-40">
       {/* Search Bar (Ctrl + K) */}
-      <div className="flex items-center gap-4 flex-1 max-w-xl">
+      <div className="flex items-center gap-3 flex-1 max-w-md">
         <div className="relative w-full">
-          <Search className="w-4 h-4 text-text-disabled absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             id="global-search-input"
             type="text"
@@ -124,152 +128,112 @@ export default function Navbar() {
                 router.push(`/empresas?search=${encodeURIComponent(searchQuery.trim())}`);
               }
             }}
-            placeholder="Buscar empresas, leads, propostas ou projetos... (Ctrl + K)"
-            className="w-full bg-surface-elevated border border-border-subtle rounded-lg pl-9 pr-14 py-2 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary transition-colors"
+            placeholder="Buscar empresas, leads ou projetos... (Ctrl + K)"
+            className="w-full bg-white/[0.03] border border-white/[0.06] rounded-lg pl-8 pr-12 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-white/[0.15] transition-colors"
           />
-          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none">
-            <kbd className="px-1.5 py-0.5 text-[9px] bg-surface-container-highest border border-border-subtle text-text-disabled rounded font-mono font-medium">
-              Ctrl
-            </kbd>
-            <kbd className="px-1.5 py-0.5 text-[9px] bg-surface-container-highest border border-border-subtle text-text-disabled rounded font-mono font-medium">
-              K
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+            <kbd className="px-1.5 py-0.5 text-[10px] bg-white/[0.04] border border-white/[0.06] text-slate-500 rounded font-mono">
+              ⌘K
             </kbd>
           </div>
         </div>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         {/* + Novo Registro Dropdown */}
         <div className="relative" ref={newRecordRef}>
           <button
             onClick={() => setNewRecordOpen(!newRecordOpen)}
-            className="h-9 px-3.5 bg-primary hover:bg-cyan-300 text-slate-950 font-bold rounded-lg flex items-center gap-1.5 text-xs transition-all shadow-sm shadow-cyan-500/10 cursor-pointer"
+            className="h-8 px-3 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             type="button"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span className="hidden sm:inline">Novo Registro</span>
-            <ChevronDown className="w-3.5 h-3.5 ml-0.5 opacity-80" />
+            <Plus className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Criar</span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
           </button>
 
           {newRecordOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-surface-elevated border border-border-subtle rounded-xl shadow-2xl p-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-text-disabled font-semibold border-b border-border-subtle mb-1">
-                Ações Rápidas
+            <div className="absolute right-0 mt-2 w-52 bg-[#0E1422] border border-white/[0.08] rounded-xl shadow-xl p-1.5 z-50 text-xs">
+              <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                Novo Registro
               </div>
               <Link
                 href="/prospeccao"
                 onClick={() => setNewRecordOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-text-primary hover:bg-surface-container-high transition-colors"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <span className="w-6 h-6 rounded-md bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 flex items-center justify-center font-bold text-xs">
-                  +L
-                </span>
-                <div>
-                  <div className="font-semibold">Novo Lead Outbound</div>
-                  <div className="text-[10px] text-text-secondary">Qualificar empresa de Manaus</div>
-                </div>
+                <Send className="w-3.5 h-3.5 text-slate-400" />
+                <span>Lead Outbound</span>
               </Link>
               <Link
                 href="/pipeline"
                 onClick={() => setNewRecordOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-text-primary hover:bg-surface-container-high transition-colors"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <span className="w-6 h-6 rounded-md bg-amber-950/60 text-amber-400 border border-amber-800/40 flex items-center justify-center font-bold text-xs">
-                  +O
-                </span>
-                <div>
-                  <div className="font-semibold">Nova Oportunidade</div>
-                  <div className="text-[10px] text-text-secondary">Adicionar ao Pipeline Kanban</div>
-                </div>
+                <Zap className="w-3.5 h-3.5 text-slate-400" />
+                <span>Oportunidade</span>
               </Link>
               <Link
                 href="/agenda"
                 onClick={() => setNewRecordOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-text-primary hover:bg-surface-container-high transition-colors"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <span className="w-6 h-6 rounded-md bg-purple-950/60 text-purple-400 border border-purple-800/40 flex items-center justify-center font-bold text-xs">
-                  +A
-                </span>
-                <div>
-                  <div className="font-semibold">Agendar Análise</div>
-                  <div className="text-[10px] text-text-secondary">Diagnóstico Presença Própria</div>
-                </div>
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>Reunião / Análise</span>
               </Link>
               <Link
                 href="/propostas"
                 onClick={() => setNewRecordOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-text-primary hover:bg-surface-container-high transition-colors"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <span className="w-6 h-6 rounded-md bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 flex items-center justify-center font-bold text-xs">
-                  +P
-                </span>
-                <div>
-                  <div className="font-semibold">Criar Proposta</div>
-                  <div className="text-[10px] text-text-secondary">Gerar PDF & condições comerciais</div>
-                </div>
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                <span>Proposta Comercial</span>
               </Link>
               <Link
                 href="/projetos"
                 onClick={() => setNewRecordOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-text-primary hover:bg-surface-container-high transition-colors"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-white/[0.04] transition-colors"
               >
-                <span className="w-6 h-6 rounded-md bg-blue-950/60 text-blue-400 border border-blue-800/40 flex items-center justify-center font-bold text-xs">
-                  +S
-                </span>
-                <div>
-                  <div className="font-semibold">Novo Projeto (SLA 7d)</div>
-                  <div className="text-[10px] text-text-secondary">Kick-off de entrega</div>
-                </div>
+                <PackageCheck className="w-3.5 h-3.5 text-slate-400" />
+                <span>Projeto</span>
               </Link>
             </div>
           )}
         </div>
 
-        {/* Separator */}
-        <div className="h-6 w-px bg-border-subtle hidden sm:block"></div>
-
         {/* Notifications Bell */}
         <div className="relative" ref={notificationsRef}>
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer relative"
             type="button"
-            title="Notificações operacionais"
+            title="Notificações"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-4 h-4" />
             {notifications.length > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger font-mono text-[10px] font-bold text-text-primary leading-none ring-2 ring-surface">
-                {notifications.length}
-              </span>
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400" />
             )}
           </button>
 
           {notificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-surface-elevated border border-border-subtle rounded-xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-border-subtle">
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${notifications.length > 0 ? 'bg-danger animate-ping' : 'bg-success'}`}></span>
-                  <span className="font-semibold text-xs text-text-primary">
-                    Avisos Operacionais ({notifications.length})
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono text-text-disabled">Hoje</span>
+            <div className="absolute right-0 mt-2 w-72 bg-[#0E1422] border border-white/[0.08] rounded-xl shadow-xl p-3 z-50 text-xs">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.06]">
+                <span className="font-semibold text-white">Notificações</span>
+                <span className="text-[10px] text-slate-500">{notifications.length} avisos</span>
               </div>
               {notifications.length === 0 ? (
-                <div className="py-6 text-center text-xs text-text-secondary">
-                  <Sparkles className="w-5 h-5 mx-auto mb-2 text-primary opacity-60" />
-                  <p className="font-medium text-text-primary">Tudo em dia!</p>
-                  <p className="text-[11px] text-text-disabled mt-0.5">Nenhuma notificação crítica no momento.</p>
+                <div className="py-4 text-center text-slate-400 text-xs">
+                  Nenhuma notificação no momento.
                 </div>
               ) : (
-                <div className="space-y-2 text-xs">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {notifications.map((n: any, idx: number) => (
-                    <div key={idx} className="p-2.5 bg-surface rounded-lg border border-border-subtle flex gap-2.5 items-start">
-                      <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                    <div key={idx} className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04] flex gap-2 items-start">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-semibold text-text-primary">{n.title || n.message}</div>
-                        <p className="text-[11px] text-text-secondary mt-0.5">{n.description || n.detail}</p>
+                        <div className="font-medium text-white">{n.title || n.message}</div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{n.description || n.detail}</p>
                       </div>
                     </div>
                   ))}
@@ -283,70 +247,56 @@ export default function Navbar() {
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center gap-2.5 pl-1 py-1 rounded-lg hover:bg-surface-elevated transition-colors text-left cursor-pointer"
+            className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/[0.04] transition-colors cursor-pointer"
             type="button"
           >
-            <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-slate-800 border border-border-subtle flex items-center justify-center font-mono text-xs font-bold text-primary ring-2 ring-primary/20">
-                {user?.name?.split(' ').map((n) => n[0]).join('') || 'DL'}
-              </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-surface"></span>
+            <div className="w-7 h-7 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-xs font-medium text-slate-200">
+              {userInitials}
             </div>
-            <div className="hidden sm:block">
-              <div className="text-xs font-bold text-text-primary leading-tight">
-                {user?.name || 'Daniel Leite'}
-              </div>
-              <div className="text-[10px] font-mono text-text-secondary leading-tight mt-0.5">
-                {user?.role || 'CTO & Product'} • Manaus, AM
-              </div>
-            </div>
-            <ChevronDown className="w-3.5 h-3.5 text-text-disabled hidden sm:block" />
+            <ChevronDown className="w-3 h-3 text-slate-500 hidden sm:block" />
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-surface-elevated border border-border-subtle rounded-xl shadow-2xl p-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-3 py-2 border-b border-border-subtle mb-1">
-                <div className="font-bold text-text-primary">{user?.name || 'Daniel Leite'}</div>
-                <div className="text-[11px] text-primary font-mono">{user?.role || 'CTO & Product'}</div>
-                <div className="text-[10px] text-text-disabled mt-0.5">VIBE Design Tech • Manaus/AM</div>
+            <div className="absolute right-0 mt-2 w-56 bg-[#0E1422] border border-white/[0.08] rounded-xl shadow-xl p-2 z-50 text-xs">
+              <div className="px-2.5 py-2 border-b border-white/[0.06] mb-1">
+                <div className="font-medium text-white">{userName}</div>
+                <div className="text-[11px] text-slate-400">{user?.role || 'Admin'}</div>
               </div>
-              <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-text-disabled font-semibold">
-                Alternar Perfil Fundador
+              <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                Alternar Perfil
               </div>
               <button
                 onClick={() => {
                   switchUserRole('ADMINISTRADOR');
                   setProfileOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                  user?.name.includes('Daniel') ? 'bg-primary/10 text-primary font-semibold' : 'text-text-secondary hover:bg-surface-container-high'
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors ${
+                  user?.name.includes('Daniel') ? 'bg-white/[0.06] text-white font-medium' : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
                 }`}
               >
                 <span>Daniel Leite (CTO)</span>
-                {user?.name.includes('Daniel') && <span className="text-[10px] bg-primary text-slate-950 px-1 rounded font-bold">Ativo</span>}
               </button>
               <button
                 onClick={() => {
                   switchUserRole('GESTOR_COMERCIAL');
                   setProfileOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                  user?.name.includes('Victor') ? 'bg-primary/10 text-primary font-semibold' : 'text-text-secondary hover:bg-surface-container-high'
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors ${
+                  user?.name.includes('Victor') ? 'bg-white/[0.06] text-white font-medium' : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
                 }`}
               >
                 <span>Victor Belichar (CEO)</span>
-                {user?.name.includes('Victor') && <span className="text-[10px] bg-primary text-slate-950 px-1 rounded font-bold">Ativo</span>}
               </button>
-              <div className="border-t border-border-subtle mt-1.5 pt-1.5">
+              <div className="border-t border-white/[0.06] mt-1.5 pt-1.5">
                 <button
                   onClick={() => {
                     logout();
                     setProfileOpen(false);
                   }}
-                  className="w-full text-left px-3 py-2 rounded-lg text-danger hover:bg-danger/10 flex items-center gap-2 transition-colors font-medium"
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Sair do VIBE OS</span>
+                  <span>Sair</span>
                 </button>
               </div>
             </div>
@@ -356,20 +306,20 @@ export default function Navbar() {
         {/* Mobile Menu Toggle */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 text-text-secondary hover:text-text-primary lg:hidden rounded-lg"
+          className="p-1.5 text-slate-400 hover:text-white lg:hidden rounded-lg"
           type="button"
           aria-label="Abrir menu"
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="absolute top-16 left-0 w-full bg-sidebar border-b border-border-subtle p-4 space-y-4 lg:hidden shadow-2xl z-50 max-h-[85vh] overflow-y-auto">
+        <div className="absolute top-14 left-0 w-full bg-[#090D16] border-b border-white/[0.08] p-4 space-y-4 lg:hidden shadow-2xl z-50 max-h-[85vh] overflow-y-auto">
           {navCategories.map((cat) => (
             <div key={cat.title}>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-text-disabled font-semibold mb-1 px-2">
+              <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1.5 px-2">
                 {cat.title}
               </div>
               <div className="grid grid-cols-2 gap-1">
@@ -378,10 +328,10 @@ export default function Navbar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                    className={`block px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                       pathname === item.href
-                        ? 'bg-surface-elevated text-primary font-bold border-l-2 border-primary'
-                        : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
+                        ? 'bg-white/[0.06] text-white font-medium'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
                     }`}
                   >
                     {item.label}

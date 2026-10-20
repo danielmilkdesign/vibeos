@@ -6,18 +6,14 @@ import {
   Users,
   Building2,
   Search,
-  Filter,
   CheckCircle2,
-  AlertTriangle,
+  AlertCircle,
   Clock,
-  ExternalLink,
   MessageSquare,
-  ShieldAlert,
   ArrowUpRight,
-  RefreshCw,
   Plus
 } from 'lucide-react';
-import { getStoredData, setStoredData } from '../../lib/crm-store';
+import { getStoredData } from '../../lib/crm-store';
 
 interface Cliente {
   id: string;
@@ -37,7 +33,7 @@ interface Cliente {
 const CLIENTES_INICIAIS: Cliente[] = [];
 
 export default function ClientesPage() {
-  const [clientes, setClientes] = useState<Cliente[]>(() =>
+  const [clientes] = useState<Cliente[]>(() =>
     getStoredData('vibe_clientes', CLIENTES_INICIAIS)
   );
   const [tabFilter, setTabFilter] = useState<'TODOS' | 'ATIVO' | 'PROSPECT' | 'PAUSADO' | 'ENCERRADO'>('ATIVO');
@@ -59,110 +55,103 @@ export default function ClientesPage() {
   const clientesEmRisco = clientes.filter(c => c.saude === 'RISCO').length;
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-400 text-[11px] font-mono">
-              Relacionamento & Retenção • MRR & LTV
-            </span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-100 flex items-center gap-2">
-            <Users className="w-7 h-7 text-cyan-400" />
-            Clientes & Saúde da Carteira
+          <h1 className="text-xl lg:text-2xl font-semibold text-white tracking-tight">
+            Clientes & Carteira
           </h1>
-          <p className="text-slate-400 text-xs mt-1">
-            Acompanhamento de retenção, renovações, serviços ativos e indicador de saúde do cliente.
+          <p className="text-sm text-slate-400 mt-1">
+            Acompanhamento de retenção, renovações e saúde das contas ativas.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/empresas"
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 border border-slate-700 transition-colors"
-          >
-            <Building2 className="w-4 h-4 text-cyan-400" /> Ver Lista de Empresas
-          </Link>
-        </div>
+        <Link
+          href="/empresas"
+          className="h-8 px-3 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors self-start sm:self-auto"
+        >
+          <Building2 className="w-3.5 h-3.5 text-slate-400" />
+          <span>Ver Empresas</span>
+        </Link>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
-          <p className="text-xs text-slate-400 font-medium">Clientes Ativos</p>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-slate-100">{totalAtivos}</span>
-            <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded-full">
-              100% retidos
-            </span>
+      {/* 2. Overview Cards */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+          <span className="text-xs text-slate-400 font-medium">Clientes Ativos</span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-semibold text-white tracking-tight">{totalAtivos}</span>
+            <span className="text-xs text-emerald-400 font-medium">100% retidos</span>
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
-          <p className="text-xs text-slate-400 font-medium">MRR da Carteira Ativa</p>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-cyan-300 font-mono">
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+          <span className="text-xs text-slate-400 font-medium">MRR da Carteira Ativa</span>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-2xl font-semibold text-white tracking-tight">
               R$ {totalMRR.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
-            <span className="text-[11px] text-slate-400">Mensal</span>
+            <span className="text-xs text-slate-400">/mês</span>
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
-          <p className="text-xs text-slate-400 font-medium">Clientes em Risco</p>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-rose-400">{clientesEmRisco}</span>
-            <span className="text-xs font-semibold text-rose-400 bg-rose-950/60 border border-rose-800/40 px-2 py-0.5 rounded-full">
-              Ação necessária
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+          <span className="text-xs text-slate-400 font-medium">Contas em Atenção</span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className={`text-2xl font-semibold tracking-tight ${clientesEmRisco > 0 ? 'text-amber-400' : 'text-white'}`}>
+              {clientesEmRisco}
+            </span>
+            <span className="text-xs text-slate-400">
+              {clientesEmRisco > 0 ? 'Requer contato' : 'Nenhuma em risco'}
             </span>
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
-          <p className="text-xs text-slate-400 font-medium">Renovações em 60 dias</p>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-amber-300">2</span>
-            <span className="text-[11px] text-amber-400 font-mono">Pre-renewal</span>
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+          <span className="text-xs text-slate-400 font-medium">Renovações em 60 dias</span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-semibold text-white tracking-tight">2</span>
+            <span className="text-xs text-slate-400">Pré-renovação</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Tabs & Filters */}
-      <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+      {/* 3. Toolbar & Filters */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
             {(['ATIVO', 'TODOS', 'PROSPECT', 'PAUSADO', 'ENCERRADO'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabFilter(tab)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                   tabFilter === tab
-                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/20'
-                    : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.02]'
                 }`}
               >
-                {tab === 'TODOS' ? 'Todos os Clientes' : tab}
+                {tab === 'TODOS' ? 'Todos' : tab.charAt(0) + tab.slice(1).toLowerCase()}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 sm:w-56">
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar cliente ou decisor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                className="w-full h-8 pl-8 pr-3 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-white/[0.15] transition-colors"
               />
             </div>
 
             <select
               value={saudeFilter}
               onChange={(e) => setSaudeFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 font-mono"
+              className="h-8 px-2.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-slate-300 focus:outline-none cursor-pointer"
             >
               <option value="ALL">Todas as Saúdes</option>
               <option value="SAUDAVEL">Saudável</option>
@@ -172,117 +161,111 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        {/* Clients Cards List */}
+        {/* 4. Client List / Empty State */}
         {filteredClientes.length === 0 ? (
-          <div className="p-12 text-center bg-slate-950/60 rounded-2xl border border-dashed border-slate-800 space-y-4">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
-              <Users className="w-7 h-7" />
-            </div>
+          <div className="py-16 text-center rounded-xl bg-white/[0.015] border border-white/[0.05] p-6 space-y-3">
+            <Users className="w-8 h-8 mx-auto text-slate-500" />
             <div>
-              <h4 className="text-base font-bold text-white">Nenhum cliente cadastrado ainda</h4>
-              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                Comece cadastrando os clientes reais da VIBE Design Tech para acompanhar contratos, MRR, esteiras de entrega e SLAs.
+              <h3 className="text-sm font-medium text-white">Nenhum cliente cadastrado ainda</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Cadastre clientes a partir de oportunidades ganhas ou crie novos registros em Empresas.
               </p>
             </div>
             <Link
               href="/empresas"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-cyan-950/20"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors"
             >
-              <Plus className="w-4 h-4" /> Cadastrar em Empresas
+              <Plus className="w-3.5 h-3.5" />
+              <span>Ver Lista de Empresas</span>
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredClientes.map((cliente) => (
-            <div
-              key={cliente.id}
-              className="bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 space-y-4 transition-all"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-slate-100 text-sm">{cliente.nome}</h3>
-                    <span className="px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400 text-[10px] font-mono">
-                      {cliente.nicho}
+              <div
+                key={cliente.id}
+                className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors space-y-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-white">{cliente.nome}</h3>
+                      <span className="px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 text-[10px]">
+                        {cliente.nicho}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">Decisor: {cliente.decisor}</p>
+                  </div>
+
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 ${
+                      cliente.saude === 'SAUDAVEL'
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : cliente.saude === 'ATENCAO'
+                        ? 'bg-amber-500/10 text-amber-300'
+                        : 'bg-rose-500/10 text-rose-400'
+                    }`}
+                  >
+                    {cliente.saude === 'SAUDAVEL' ? (
+                      <CheckCircle2 className="w-3 h-3" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3" />
+                    )}
+                    {cliente.saude}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/[0.04] text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">Serviços</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {cliente.servicos.map((s, i) => (
+                        <span key={i} className="px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-300 text-[10px]">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">MRR Mensal</span>
+                    <span className="font-semibold text-white text-sm mt-0.5 block">
+                      R$ {cliente.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">Decisor: {cliente.decisor}</p>
                 </div>
 
-                {/* Health Badge */}
-                <span
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold font-mono flex items-center gap-1 border ${
-                    cliente.saude === 'SAUDAVEL'
-                      ? 'bg-emerald-950/70 border-emerald-800 text-emerald-400'
-                      : cliente.saude === 'ATENCAO'
-                      ? 'bg-amber-950/70 border-amber-800 text-amber-300'
-                      : 'bg-rose-950/70 border-rose-800 text-rose-400 animate-pulse'
-                  }`}
-                >
-                  {cliente.saude === 'SAUDAVEL' ? (
-                    <CheckCircle2 className="w-3 h-3" />
-                  ) : cliente.saude === 'ATENCAO' ? (
-                    <AlertTriangle className="w-3 h-3" />
-                  ) : (
-                    <ShieldAlert className="w-3 h-3" />
-                  )}
-                  {cliente.saude}
-                </span>
-              </div>
-
-              {/* Service & MRR details */}
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-900 text-xs">
-                <div>
-                  <p className="text-slate-500 text-[10px] uppercase font-semibold">Serviços Contratados</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {cliente.servicos.map((s, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 text-[10px]">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-slate-500 text-[10px] uppercase font-semibold">MRR Mensal</p>
-                  <p className="font-mono font-bold text-cyan-300 text-sm mt-0.5">
-                    R$ {cliente.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                <div className="p-2.5 rounded-lg bg-white/[0.015] border border-white/[0.03] text-xs space-y-1">
+                  <p className="text-slate-400 text-[11px] flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-cyan-400" /> Projeto:
+                    <span className="text-slate-200 font-medium ml-1">{cliente.projetoAtual}</span>
+                  </p>
+                  <p className="text-slate-500 text-[11px]">
+                    Renovação: {cliente.renovacaoEm} • Contato: {cliente.ultimoContato}
                   </p>
                 </div>
-              </div>
 
-              {/* Current Project & Renewal */}
-              <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-900 text-xs space-y-1">
-                <p className="text-slate-400 text-[11px] flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-cyan-400" /> Projeto Atual:
-                  <span className="text-slate-200 font-medium ml-1">{cliente.projetoAtual}</span>
-                </p>
-                <p className="text-slate-500 text-[11px]">
-                  Próxima Renovação: <span className="text-slate-300 font-mono">{cliente.renovacaoEm}</span> • Último contato: {cliente.ultimoContato}
-                </p>
-              </div>
+                <div className="flex items-center justify-between pt-2 border-t border-white/[0.04] text-xs">
+                  <a
+                    href={`https://wa.me/${cliente.whatsapp}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+                  </a>
 
-              {/* Quick Actions */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-900">
-                <a
-                  href={`https://wa.me/${cliente.whatsapp}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-semibold"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Decisor
-                </a>
-
-                <Link
-                  href={`/empresas/${cliente.id}`}
-                  className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold"
-                >
-                  Ver Ficha 360° <ArrowUpRight className="w-3.5 h-3.5" />
-                </Link>
+                  <Link
+                    href={`/empresas/${cliente.id}`}
+                    className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                  >
+                    <span>Ficha 360°</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

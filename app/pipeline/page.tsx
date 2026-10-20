@@ -1,27 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import {
   Search,
-  PlusCircle,
-  TrendingUp,
-  AlertTriangle,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  Video,
-  Gavel,
-  Store,
-  Building,
-  Dumbbell,
-  Sparkles,
-  ArrowRight,
-  ShieldAlert,
-  Lock,
   Plus,
-  Eye,
-  FileText
+  Clock,
+  Lock,
+  AlertCircle,
+  TrendingUp,
+  DollarSign,
+  ChevronRight,
+  Filter
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { getStoredData, setStoredData, INITIAL_OPPORTUNITIES } from '../../lib/crm-store';
@@ -30,7 +19,6 @@ import { Opportunity } from '../../types/crm';
 interface KanbanColumn {
   id: string;
   title: string;
-  colorDot: string;
 }
 
 export default function PipelinePage() {
@@ -58,15 +46,15 @@ export default function PipelinePage() {
   const weightedValue = Math.round(opportunities.reduce((acc, o) => acc + (o.estimatedValue || 0) * ((o.probability || 0) / 100), 0));
   const closedWonCount = opportunities.filter((o) => (o.stage as string) === 'FECHADO_GANHO' || (o.stage as string) === 'FECHADO').length;
   const conversionRate = opportunities.length > 0 ? Math.round((closedWonCount / opportunities.length) * 100) : 0;
-  const weightedPercent = totalPipeline > 0 ? ((weightedValue / totalPipeline) * 100).toFixed(1) : '0';
+  const weightedPercent = totalPipeline > 0 ? ((weightedValue / totalPipeline) * 100).toFixed(0) : '0';
 
   const columns: KanbanColumn[] = [
-    { id: 'QUALIFICADO', title: 'Qualificado', colorDot: 'bg-text-disabled' },
-    { id: 'ANALISE_AGENDADA', title: 'Análise Agendada', colorDot: 'bg-primary' },
-    { id: 'ANALISE_REALIZADA', title: 'Análise Realizada', colorDot: 'bg-surface-tint' },
-    { id: 'PROPOSTA_ENVIADA', title: 'Proposta Enviada', colorDot: 'bg-secondary' },
-    { id: 'NEGOCIACAO', title: 'Em Negociação', colorDot: 'bg-warning' },
-    { id: 'FECHADO_GANHO', title: 'Fechado Ganho', colorDot: 'bg-success' }
+    { id: 'QUALIFICADO', title: 'Qualificado' },
+    { id: 'ANALISE_AGENDADA', title: 'Análise Agendada' },
+    { id: 'ANALISE_REALIZADA', title: 'Diagnóstico Realizado' },
+    { id: 'PROPOSTA_ENVIADA', title: 'Proposta Enviada' },
+    { id: 'NEGOCIACAO', title: 'Em Negociação' },
+    { id: 'FECHADO_GANHO', title: 'Fechado Ganho' }
   ];
 
   const handleStageChangeInitiate = (oppId: string, targetStage: string) => {
@@ -149,114 +137,79 @@ export default function PipelinePage() {
   });
 
   return (
-    <div className="bg-surface-container-lowest min-h-screen p-4 lg:p-8 space-y-6">
-      {/* Top Executive Overview & Tactical Metric Bar */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-surface-container-low p-6 rounded-xl border border-border-subtle shadow-md">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-text-primary tracking-tight">
-                Pipeline Comercial
-              </h1>
-              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-mono text-[11px] font-semibold">
-                Q4 Ciclo Ativo
-              </span>
-            </div>
-            <p className="text-xs text-text-secondary">
-              Gestão visual do ciclo de vendas: da qualificação ao fechamento ganho com Próximo Passo Obrigatório.
-            </p>
-          </div>
-
-          {/* Live Calculated Summary Badges */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-col bg-surface-elevated px-4 py-2.5 rounded-lg border border-border-subtle shadow-sm min-w-[140px]">
-              <span className="font-mono text-[10px] text-text-secondary uppercase tracking-wider">
-                Total em Pipeline
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="font-mono text-base font-bold text-text-primary">
-                  R$ {totalPipeline.toLocaleString('pt-BR')}
-                </span>
-                <span className="font-mono text-[11px] text-text-disabled font-semibold">{opportunities.length} deals</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col bg-surface-elevated px-4 py-2.5 rounded-lg border border-border-subtle shadow-sm min-w-[140px]">
-              <span className="font-mono text-[10px] text-text-secondary uppercase tracking-wider">
-                Valor Ponderado
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="font-mono text-base font-bold text-primary">
-                  R$ {weightedValue.toLocaleString('pt-BR')}
-                </span>
-                <span className="font-mono text-[11px] text-text-disabled">{weightedPercent}%</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col bg-surface-elevated px-4 py-2.5 rounded-lg border border-border-subtle shadow-sm min-w-[140px]">
-              <span className="font-mono text-[10px] text-text-secondary uppercase tracking-wider">
-                Taxa de Conversão
-              </span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="font-mono text-base font-bold text-success">{conversionRate}%</span>
-                <span className="font-mono text-[10px] text-text-secondary">{closedWonCount} ganhos</span>
-              </div>
-            </div>
-          </div>
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* 1. Header & Summary Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-semibold text-white tracking-tight">
+            Pipeline Comercial
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Gestão visual do funil de vendas e próximos passos com os clientes.
+          </p>
         </div>
 
-        {/* Quick Control & Filtering Toolbar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface p-3 rounded-xl border border-border-subtle shadow-sm">
-          <div className="flex flex-wrap items-center gap-2 flex-1">
-            {/* Search filter input */}
-            <div className="relative min-w-[240px] flex-1 max-w-sm">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-disabled" />
-              <input
-                type="text"
-                id="pipelineSearch"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filtrar oportunidade, decisor ou bairro..."
-                className="w-full h-9 pl-9 pr-3 bg-surface-container rounded-lg border border-border-subtle text-text-primary placeholder:text-text-disabled text-xs focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-
-            {/* Filter Pill: Responsavel */}
-            <div className="flex items-center gap-1.5 h-9 px-3 bg-surface-container border border-border-subtle rounded-lg text-text-primary text-xs font-medium cursor-pointer">
-              <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono text-[10px] font-bold">
-                {user?.name?.split(' ').map((n) => n[0]).join('') || 'DL'}
-              </div>
-              <span>{user?.name || 'Daniel Leite'}</span>
-            </div>
-
-            {/* Filter Pill: Segmento */}
-            <select
-              value={segmentFilter}
-              onChange={(e) => setSegmentFilter(e.target.value)}
-              className="h-9 px-3 bg-surface-container border border-border-subtle rounded-lg text-text-secondary text-xs focus:outline-none focus:border-primary cursor-pointer"
-            >
-              <option value="ALL">Segmento: Todos</option>
-              <option value="ESTETICA">Estética Integrativa</option>
-              <option value="ODONTOLOGIA">Odontologia</option>
-              <option value="ADVOCACIA">Advocacia</option>
-            </select>
+        {/* Clean Metrics Summary */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="px-3.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Total no Funil</span>
+            <span className="text-sm font-semibold text-white">R$ {totalPipeline.toLocaleString('pt-BR')}</span>
+            <span className="text-[11px] text-slate-400 ml-1">({opportunities.length} deals)</span>
           </div>
 
-          {/* Action Button */}
-          <button
-            onClick={() => setIsNewOppModalOpen(true)}
-            className="h-9 px-4 bg-primary hover:bg-cyan-300 text-slate-950 font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 shadow-sm shadow-cyan-500/10 cursor-pointer transition-all"
-            type="button"
-          >
-            <PlusCircle className="w-4 h-4 stroke-[2.5]" />
-            <span>+ Nova Oportunidade</span>
-          </button>
+          <div className="px-3.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Ponderado</span>
+            <span className="text-sm font-semibold text-cyan-400">R$ {weightedValue.toLocaleString('pt-BR')}</span>
+            <span className="text-[11px] text-slate-400 ml-1">({weightedPercent}%)</span>
+          </div>
+
+          <div className="px-3.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Conversão</span>
+            <span className="text-sm font-semibold text-emerald-400">{conversionRate}%</span>
+            <span className="text-[11px] text-slate-400 ml-1">({closedWonCount} ganhos)</span>
+          </div>
         </div>
       </div>
 
-      {/* Horizontal Kanban Board (Min width 1720px for high density) */}
-      <div className="w-full overflow-x-auto pb-6">
-        <div className="flex items-start gap-4 min-w-[1720px]">
+      {/* 2. Control Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-1 max-w-md">
+          <div className="relative w-full">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por empresa, oferta ou decisor..."
+              className="w-full h-8 pl-8 pr-3 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-white/[0.15] transition-colors"
+            />
+          </div>
+
+          <select
+            value={segmentFilter}
+            onChange={(e) => setSegmentFilter(e.target.value)}
+            className="h-8 px-2.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-slate-300 focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">Todos os nichos</option>
+            <option value="ESTETICA">Estética</option>
+            <option value="ODONTOLOGIA">Odontologia</option>
+            <option value="ADVOCACIA">Advocacia</option>
+          </select>
+        </div>
+
+        <button
+          onClick={() => setIsNewOppModalOpen(true)}
+          className="h-8 px-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          type="button"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Nova Oportunidade</span>
+        </button>
+      </div>
+
+      {/* 3. Horizontal Kanban Board */}
+      <div className="w-full overflow-x-auto pb-4">
+        <div className="flex items-start gap-3 min-w-max">
           {columns.map((col) => {
             const colOpps = filteredOpps.filter((o) => {
               const stage = o.stage as string;
@@ -272,28 +225,25 @@ export default function PipelinePage() {
             return (
               <div
                 key={col.id}
-                className={`flex-1 min-w-[280px] bg-surface-container-lowest border rounded-xl p-2.5 flex flex-col gap-2 shadow-sm ${
-                  col.id === 'FECHADO_GANHO' ? 'border-t-2 border-t-success border-border-subtle' : 'border-border-subtle'
-                }`}
+                className="w-72 bg-white/[0.015] border border-white/[0.05] rounded-xl p-3 flex flex-col gap-2.5 shrink-0"
               >
                 {/* Column Header */}
-                <div className="flex items-center justify-between p-1">
+                <div className="flex items-center justify-between pb-2 border-b border-white/[0.04]">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${col.colorDot}`} />
-                    <span className="text-xs font-bold text-text-primary">{col.title}</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-surface-elevated font-mono text-[10px] text-text-secondary font-semibold">
+                    <span className="text-xs font-semibold text-white">{col.title}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white/[0.05] text-[10px] text-slate-400 font-medium">
                       {colOpps.length}
                     </span>
                   </div>
                   {col.id === 'FECHADO_GANHO' ? (
-                    <Lock className="w-3.5 h-3.5 text-success" />
+                    <Lock className="w-3.5 h-3.5 text-slate-500" />
                   ) : (
                     <button
                       onClick={() => {
                         setNewStage(col.id);
                         setIsNewOppModalOpen(true);
                       }}
-                      className="w-6 h-6 rounded hover:bg-surface-elevated flex items-center justify-center text-text-secondary hover:text-primary transition-colors"
+                      className="p-1 hover:bg-white/[0.06] rounded text-slate-500 hover:text-white transition-colors"
                       title="Adicionar nesta etapa"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -301,29 +251,18 @@ export default function PipelinePage() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between px-1 text-text-disabled font-mono text-[11px] pb-1 border-b border-border-subtle/50">
-                  <span>{col.id === 'FECHADO_GANHO' ? 'Este Ciclo' : 'Acumulado'}</span>
-                  <span className={`font-semibold ${col.id === 'FECHADO_GANHO' ? 'text-success font-bold' : 'text-text-primary'}`}>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 px-0.5">
+                  <span>Subtotal</span>
+                  <span className={`font-medium ${col.id === 'FECHADO_GANHO' ? 'text-emerald-400' : 'text-slate-200'}`}>
                     R$ {colTotal.toLocaleString('pt-BR')}
                   </span>
                 </div>
 
                 {/* Cards Container */}
-                <div className="flex flex-col gap-2.5 min-h-[460px]">
+                <div className="flex flex-col gap-2 min-h-[420px]">
                   {colOpps.length === 0 ? (
-                    <div className="py-12 px-3 text-center border border-dashed border-border-subtle rounded-xl flex flex-col items-center justify-center gap-1.5 text-text-disabled my-auto">
-                      <span className="text-xs">Nenhum deal nesta etapa</span>
-                      {col.id !== 'FECHADO_GANHO' && (
-                        <button
-                          onClick={() => {
-                            setNewStage(col.id);
-                            setIsNewOppModalOpen(true);
-                          }}
-                          className="text-[11px] text-primary hover:underline font-mono flex items-center gap-1 mt-1"
-                        >
-                          <Plus className="w-3 h-3" /> Criar oportunidade
-                        </button>
-                      )}
+                    <div className="py-12 px-2 text-center text-xs text-slate-400 flex flex-col items-center justify-center my-auto">
+                      <span>Nenhum deal nesta etapa</span>
                     </div>
                   ) : (
                     colOpps.map((opp) => {
@@ -331,122 +270,71 @@ export default function PipelinePage() {
                       return (
                         <div
                           key={opp.id}
-                          className={`group p-3.5 bg-surface rounded-xl border shadow-sm hover:bg-surface-elevated transition-all flex flex-col gap-2 cursor-grab active:cursor-grabbing ${
-                            isDelayed
-                              ? 'border-l-4 border-l-danger border-border-subtle'
-                              : col.id === 'FECHADO_GANHO'
-                              ? 'border-border-subtle opacity-95 hover:opacity-100'
-                              : 'border-border-subtle'
-                          }`}
+                          className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.05] hover:border-white/[0.12] transition-colors flex flex-col gap-2 group"
                         >
-                        {/* Card Header Tag */}
-                        <div className="flex items-start justify-between gap-1">
-                          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px] font-semibold">
-                            {opp.title.includes('Esteira') ? 'Esteira de Crescimento' : 'Presença Própria'}
-                          </span>
-                          {isDelayed ? (
-                            <span className="px-1.5 py-0.5 rounded bg-danger/15 text-danger font-mono text-[10px] font-bold flex items-center gap-0.5">
-                              <AlertTriangle className="w-3 h-3" /> Atrasado 1d
+                          {/* Company Name & Urgent Badge */}
+                          <div className="flex items-start justify-between gap-1">
+                            <span className="text-xs font-medium text-white truncate">
+                              {opp.companyName}
                             </span>
-                          ) : (
-                            <span className="font-mono text-[10px] text-text-disabled">Recente</span>
-                          )}
-                        </div>
-
-                        {/* Company & Title */}
-                        <div>
-                          <div className="flex items-center gap-1 text-text-secondary text-[11px]">
-                            <span>{opp.companyName}</span>
+                            {isDelayed && (
+                              <span className="text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded font-medium shrink-0">
+                                Atrasado
+                              </span>
+                            )}
                           </div>
-                          <h4 className="text-xs text-text-primary font-bold mt-0.5 leading-snug">
-                            {opp.title}
-                          </h4>
-                        </div>
 
-                        {/* Value / Decisor Box */}
-                        <div className="bg-surface-container-low p-2 rounded-lg border border-border-subtle/40 flex items-center justify-between">
-                          <div>
-                            <span className="font-mono text-[9px] text-text-disabled block">
-                              {col.id === 'FECHADO_GANHO' ? 'Total Contratado' : 'Valor Estimado'}
-                            </span>
-                            <span className={`font-mono text-xs font-bold ${col.id === 'FECHADO_GANHO' ? 'text-success' : 'text-text-primary'}`}>
+                          {/* Offer Title */}
+                          <div className="text-[11px] text-slate-400 truncate">
+                            {opp.title}
+                          </div>
+
+                          {/* Value & Decisor */}
+                          <div className="flex items-center justify-between pt-1 border-t border-white/[0.04] text-xs">
+                            <span className={`font-semibold ${col.id === 'FECHADO_GANHO' ? 'text-emerald-400' : 'text-white'}`}>
                               R$ {opp.estimatedValue.toLocaleString('pt-BR')}
                             </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-mono text-[9px] text-text-disabled block">Decisor</span>
-                            <span className="text-[11px] text-text-secondary font-medium">
+                            <span className="text-[11px] text-slate-400 truncate max-w-[110px]">
                               {opp.decisorName || 'Decisor'}
                             </span>
                           </div>
-                        </div>
 
-                        {/* Probability Micro-Bar (if not won) */}
-                        {col.id !== 'FECHADO_GANHO' && (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex justify-between font-mono text-[10px] text-text-disabled">
-                              <span>Probabilidade</span>
-                              <span className="text-primary font-semibold">{opp.probability}%</span>
+                          {/* Next Action Box */}
+                          {col.id !== 'FECHADO_GANHO' && opp.nextAction && (
+                            <div className="px-2 py-1.5 rounded bg-white/[0.02] border border-white/[0.03] text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
+                              <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                              <span className="truncate">{opp.nextAction}</span>
                             </div>
-                            <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                          )}
+
+                          {/* Card Footer: Stage Advance Dropdown */}
+                          {col.id !== 'FECHADO_GANHO' && (
+                            <div className="flex items-center justify-between pt-1 text-[11px]">
+                              <select
+                                value={opp.stage}
+                                onChange={(e) => handleStageChangeInitiate(opp.id, e.target.value)}
+                                className="bg-white/[0.04] border border-white/[0.06] rounded px-1.5 py-0.5 text-[10px] text-cyan-400 focus:outline-none cursor-pointer"
+                              >
+                                <option value="QUALIFICADO">Mover: Qualificado</option>
+                                <option value="ANALISE_AGENDADA">Mover: Análise</option>
+                                <option value="ANALISE_REALIZADA">Mover: Diagnóstico</option>
+                                <option value="PROPOSTA_ENVIADA">Mover: Proposta</option>
+                                <option value="NEGOCIACAO">Mover: Negociação</option>
+                                <option value="FECHADO_GANHO">Mover: Fechado ✓</option>
+                              </select>
+
                               <div
-                                className={`h-full rounded-full ${
-                                  opp.probability > 60 ? 'bg-primary' : 'bg-text-disabled'
-                                }`}
-                                style={{ width: `${opp.probability}%` }}
-                              />
+                                className="w-5 h-5 rounded-full bg-white/[0.06] text-slate-300 flex items-center justify-center text-[9px] font-medium"
+                                title={`Responsável: ${opp.ownerName}`}
+                              >
+                                DL
+                              </div>
                             </div>
-                          </div>
-                        )}
-
-                        {/* Next Action Box / Status */}
-                        {col.id === 'FECHADO_GANHO' ? (
-                          <div className="flex items-center justify-between pt-1 border-t border-border-subtle/50 text-[11px] text-text-secondary">
-                            <span>Onboarding em Produção</span>
-                            <span className="w-5 h-5 rounded-full bg-success/20 text-success flex items-center justify-center font-mono text-[10px] font-bold">
-                              ✓
-                            </span>
-                          </div>
-                        ) : (
-                          <div
-                            className={`p-2 rounded-lg text-xs flex items-center justify-between ${
-                              isDelayed ? 'bg-danger/10 text-danger' : 'bg-surface-container-low/70 text-text-secondary'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5 truncate">
-                              <Clock className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate text-[11px]">{opp.nextAction}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Card Footer: Advance Action Dropdown */}
-                        {col.id !== 'FECHADO_GANHO' && (
-                          <div className="flex items-center justify-between pt-1 border-t border-border-subtle/40 text-[11px]">
-                            <select
-                              value={opp.stage}
-                              onChange={(e) => handleStageChangeInitiate(opp.id, e.target.value)}
-                              className="bg-surface-container border border-border-subtle rounded px-1.5 py-0.5 text-[10px] font-mono text-primary focus:outline-none cursor-pointer"
-                            >
-                              <option value="QUALIFICADO">Mover: Qualificado</option>
-                              <option value="ANALISE_AGENDADA">Mover: Análise</option>
-                              <option value="ANALISE_REALIZADA">Mover: Diagnóstico</option>
-                              <option value="PROPOSTA_ENVIADA">Mover: Proposta</option>
-                              <option value="NEGOCIACAO">Mover: Negociação</option>
-                              <option value="FECHADO_GANHO">Mover: Fechado Ganho ✓</option>
-                            </select>
-
-                            <div
-                              className="w-5 h-5 rounded-full bg-surface-container-high text-primary flex items-center justify-center font-mono text-[9px] font-bold"
-                              title={`Responsável: ${opp.ownerName}`}
-                            >
-                              DL
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }))}
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             );
@@ -456,53 +344,52 @@ export default function PipelinePage() {
 
       {/* Mandatory Next Action Modal */}
       {pendingMove && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-border-subtle w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2 text-primary">
-              <AlertTriangle className="w-5 h-5" />
-              <h3 className="text-base font-bold text-text-primary">
-                Regra 1: Próximo Passo Obrigatório
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0E1422] border border-white/[0.08] w-full max-w-md rounded-xl p-5 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-white">
+                Próximo Passo Obrigatório
               </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Defina o compromisso e a data limite para esta oportunidade não esfriar.
+              </p>
             </div>
-            <p className="text-xs text-text-secondary leading-relaxed">
-              No VIBE OS, toda oportunidade em aberto precisa de um compromisso e data limite agendada para não esfriar no pipeline.
-            </p>
 
             <form onSubmit={handleConfirmNextAction} className="space-y-3 text-xs">
               <div>
-                <label className="block text-text-secondary font-semibold mb-1">Qual a próxima ação?</label>
+                <label className="block text-slate-300 font-medium mb-1">Qual a próxima ação?</label>
                 <input
                   type="text"
                   required
                   value={nextActionText}
                   onChange={(e) => setNextActionText(e.target.value)}
-                  placeholder="Ex: Apresentar Proposta VIBE / Follow-up WhatsApp"
-                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+                  placeholder="Ex: Apresentar Proposta Comercial / Follow-up"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <div>
-                <label className="block text-text-secondary font-semibold mb-1">Data Limite da Ação</label>
+                <label className="block text-slate-300 font-medium mb-1">Data Limite da Ação</label>
                 <input
                   type="date"
                   required
                   value={nextActionDate}
                   onChange={(e) => setNextActionDate(e.target.value)}
-                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary font-mono focus:outline-none focus:border-primary"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-border-subtle">
+              <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.06]">
                 <button
                   type="button"
                   onClick={() => setPendingMove(null)}
-                  className="px-4 py-2 bg-surface-container-high text-text-secondary hover:text-text-primary rounded-lg font-medium"
+                  className="px-3 py-1.5 text-slate-400 hover:text-white rounded-lg text-xs font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-cyan-300 text-slate-950 font-bold rounded-lg shadow-sm"
+                  className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg text-xs transition-colors"
                 >
                   Confirmar Avanço
                 </button>
@@ -514,66 +401,70 @@ export default function PipelinePage() {
 
       {/* New Opportunity Modal */}
       {isNewOppModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-border-subtle w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-text-primary">Nova Oportunidade no Pipeline</h3>
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0E1422] border border-white/[0.08] w-full max-w-md rounded-xl p-5 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Nova Oportunidade</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Cadastrar oportunidade no pipeline</p>
+            </div>
+
             <form onSubmit={handleCreateOpportunity} className="space-y-3 text-xs">
               <div>
-                <label className="block text-text-secondary font-semibold mb-1">Empresa</label>
+                <label className="block text-slate-300 font-medium mb-1">Empresa</label>
                 <input
                   type="text"
                   required
                   value={newCompany}
                   onChange={(e) => setNewCompany(e.target.value)}
-                  placeholder="Ex: Prime Odonto Adrianópolis"
-                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+                  placeholder="Ex: Prime Odontologia"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <div>
-                <label className="block text-text-secondary font-semibold mb-1">Título da Oferta</label>
+                <label className="block text-slate-300 font-medium mb-1">Título da Oferta</label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Presença Própria (Setup + SEO Local)"
-                  className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-text-secondary font-semibold mb-1">Decisor</label>
+                  <label className="block text-slate-300 font-medium mb-1">Decisor</label>
                   <input
                     type="text"
                     value={newDecisor}
                     onChange={(e) => setNewDecisor(e.target.value)}
                     placeholder="Dr. Fernando"
-                    className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+                    className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                   />
                 </div>
                 <div>
-                  <label className="block text-text-secondary font-semibold mb-1">Valor (R$)</label>
+                  <label className="block text-slate-300 font-medium mb-1">Valor (R$)</label>
                   <input
                     type="number"
                     value={newValue}
                     onChange={(e) => setNewValue(Number(e.target.value))}
-                    className="w-full bg-surface-elevated border border-border-subtle rounded-lg px-3 py-2 text-text-primary font-mono focus:outline-none focus:border-primary"
+                    className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-border-subtle">
+              <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.06]">
                 <button
                   type="button"
                   onClick={() => setIsNewOppModalOpen(false)}
-                  className="px-4 py-2 bg-surface-container-high text-text-secondary hover:text-text-primary rounded-lg font-medium"
+                  className="px-3 py-1.5 text-slate-400 hover:text-white rounded-lg text-xs font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary-container hover:bg-primary-hover text-surface-container-lowest font-bold rounded-lg shadow-sm"
+                  className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg text-xs transition-colors"
                 >
                   Criar Oportunidade
                 </button>

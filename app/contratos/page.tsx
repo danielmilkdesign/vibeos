@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileCheck, DollarSign, Calendar, AlertCircle, Plus, CheckCircle2, RefreshCw } from 'lucide-react';
+import { FileCheck, Plus } from 'lucide-react';
 import { getStoredData, setStoredData, INITIAL_CONTRACTS } from '../../lib/crm-store';
 import { Contract } from '../../types/crm';
 
@@ -58,69 +58,67 @@ export default function ContratosPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 text-[11px] font-mono">
-              Receita Recorrente Mensal (MRR)
-            </span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-100">
-            Contratos & Recorrência Mensal
+          <h1 className="text-xl lg:text-2xl font-semibold text-white tracking-tight">
+            Contratos & Recorrência (MRR)
           </h1>
-          <p className="text-slate-400 text-xs mt-1">
-            Controle de mensalidades, vencimentos de faturamento e franquias de entregas mensais.
+          <p className="text-sm text-slate-400 mt-1">
+            Controle de mensalidades, vencimentos e franquias de entregas mensais.
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-right">
-            <p className="text-[10px] text-slate-400 uppercase font-mono">MRR Total Ativo</p>
-            <p className="text-base font-extrabold text-emerald-400">R$ {totalMRR.toLocaleString('pt-BR')}/mês</p>
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06] text-right">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">MRR Ativo</span>
+            <span className="text-sm font-semibold text-emerald-400">R$ {totalMRR.toLocaleString('pt-BR')}/mês</span>
           </div>
+
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/25"
+            className="h-8 px-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Novo Contrato Recorrente
+            <Plus className="w-3.5 h-3.5" />
+            <span>Novo Contrato</span>
           </button>
         </div>
       </div>
 
-      {/* Contracts List */}
+      {/* 2. Contracts List */}
       {contracts.length === 0 ? (
-        <div className="bg-slate-900/60 border border-dashed border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
-          <FileCheck className="w-10 h-10 text-slate-600" />
-          <div className="space-y-1">
-            <h3 className="text-slate-200 font-bold text-base">Nenhum contrato ativo</h3>
-            <p className="text-slate-400 text-xs max-w-sm">
-              Cadastre contratos com faturamento recorrente (MRR) para monitorar vencimentos e franquias de entregas.
+        <div className="py-16 text-center rounded-xl bg-white/[0.015] border border-white/[0.05] p-6 space-y-3">
+          <FileCheck className="w-8 h-8 mx-auto text-slate-500" />
+          <div>
+            <h3 className="text-sm font-medium text-white">Nenhum contrato ativo</h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              Cadastre contratos de receita recorrente para acompanhar faturamentos e entregas.
             </p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-emerald-950"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors"
           >
-            <Plus className="w-4 h-4" /> Cadastrar Primeiro Contrato
+            <Plus className="w-3.5 h-3.5" />
+            <span>Cadastrar Primeiro Contrato</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {contracts.map((c) => (
             <div
               key={c.id}
-              className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-emerald-800/60 transition-all flex flex-col justify-between"
+              className="p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors flex flex-col justify-between space-y-4"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-cyan-400 font-bold">{c.contractNumber}</span>
+                  <span className="text-xs font-medium text-cyan-400">{c.contractNumber}</span>
                   <span
-                    className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold border ${
+                    className={`text-[10px] px-2 py-0.5 rounded font-medium ${
                       c.status === 'RENOVACAO_PROXIMA'
-                        ? 'bg-amber-950 text-amber-400 border-amber-800'
-                        : 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                        ? 'bg-amber-500/10 text-amber-300'
+                        : 'bg-emerald-500/10 text-emerald-400'
                     }`}
                   >
                     {c.status.replace('_', ' ')}
@@ -128,46 +126,47 @@ export default function ContratosPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-lg text-slate-100">{c.companyName}</h3>
-                  <p className="text-xs text-slate-400">Plano: {c.offerName} • Cliente: {c.clientName}</p>
+                  <h3 className="text-sm font-semibold text-white">{c.companyName}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{c.offerName} • {c.clientName}</p>
                 </div>
 
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 font-mono text-xs">
-                  <div className="flex justify-between text-slate-300">
-                    <span>Mensalidade Recorrente:</span>
-                    <span className="text-emerald-400 font-extrabold text-sm">R$ {c.recurringValue.toLocaleString('pt-BR')}/mês</span>
+                <div className="p-3 rounded-lg bg-white/[0.015] border border-white/[0.04] space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Mensalidade:</span>
+                    <span className="text-white font-semibold">R$ {c.recurringValue.toLocaleString('pt-BR')}/mês</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-[11px]">
-                    <span>Vencimento do Faturamento:</span>
-                    <span className="text-slate-200">Dia {c.dueDay} de cada mês</span>
+                    <span>Vencimento:</span>
+                    <span className="text-slate-200">Todo dia {c.dueDay}</span>
                   </div>
                   <div className="flex justify-between text-slate-400 text-[11px]">
-                    <span>Renovação do Contrato:</span>
+                    <span>Renovação:</span>
                     <span className="text-slate-200">{c.renewalDate}</span>
                   </div>
                 </div>
 
-                {/* Delivery Limit Tracker */}
-                <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-slate-400">Franquia Mensal de Entregas:</span>
-                    <span className="text-cyan-400 font-bold">{c.deliveriesUsed} de {c.deliveryLimit} utilizadas</span>
+                {/* Delivery Limit Progress */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px] text-slate-400">
+                    <span>Franquia de Entregas:</span>
+                    <span className="text-white font-medium">{c.deliveriesUsed} de {c.deliveryLimit} utilizadas</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                  <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-cyan-500 rounded-full transition-all"
+                      className="h-full bg-cyan-400 rounded-full transition-all"
                       style={{ width: `${(c.deliveriesUsed / c.deliveryLimit) * 100}%` }}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+              <div className="pt-3 border-t border-white/[0.04]">
                 <button
                   onClick={() => handleIncrementDelivery(c.id)}
-                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5"
+                  className="w-full py-1.5 rounded-lg border border-white/[0.06] hover:bg-white/[0.04] text-xs font-medium text-slate-300 hover:text-white flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Registrar Entrega de Arte/Conteúdo
+                  <Plus className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Registrar Entrega de Conteúdo</span>
                 </button>
               </div>
             </div>
@@ -177,35 +176,39 @@ export default function ContratosPage() {
 
       {/* New Contract Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-100">Criar Novo Contrato Recorrente</h3>
-            <form onSubmit={handleCreateContract} className="space-y-3">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0E1422] border border-white/[0.08] w-full max-w-md rounded-xl p-5 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Novo Contrato Recorrente</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Cadastrar contrato de retenção / mensalidade</p>
+            </div>
+
+            <form onSubmit={handleCreateContract} className="space-y-3 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nome da Empresa</label>
+                <label className="block text-slate-300 font-medium mb-1">Nome da Empresa</label>
                 <input
                   type="text"
                   required
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Ex: Studio FitManaus Personal"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  placeholder="Ex: Studio Fit Personal"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nome do Decisor</label>
+                <label className="block text-slate-300 font-medium mb-1">Nome do Decisor</label>
                 <input
                   type="text"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Victor Belichar"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  placeholder="Dr. Fernando"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Plano Recorrente</label>
+                <label className="block text-slate-300 font-medium mb-1">Plano Recorrente</label>
                 <select
                   value={offerName}
                   onChange={(e) => {
@@ -221,7 +224,7 @@ export default function ContratosPage() {
                       setDeliveryLimit(5);
                     }
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
                 >
                   <option value="Plano 5 Artes Mensais">Plano 5 Artes Mensais (R$ 490/mês)</option>
                   <option value="Plano 12 Artes Mensais">Plano 12 Artes Mensais (R$ 1.290/mês)</option>
@@ -231,36 +234,36 @@ export default function ContratosPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Valor Mensal (R$)</label>
+                  <label className="block text-slate-300 font-medium mb-1">Valor Mensal (R$)</label>
                   <input
                     type="number"
                     value={recurringVal}
                     onChange={(e) => setRecurringVal(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Franquia de Artes</label>
+                  <label className="block text-slate-300 font-medium mb-1">Franquia de Entregas</label>
                   <input
                     type="number"
                     value={deliveryLimit}
                     onChange={(e) => setDeliveryLimit(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.06]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-medium"
+                  className="px-3 py-1.5 text-slate-400 hover:text-white rounded-lg text-xs font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-600/25"
+                  className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg text-xs transition-colors"
                 >
                   Ativar Contrato
                 </button>

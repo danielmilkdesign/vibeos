@@ -4,23 +4,16 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp,
-  Building2,
   Calendar,
-  FileText,
   Clock,
   ArrowRight,
   UserPlus,
-  Zap,
-  CalendarCheck,
-  PlusCircle,
-  AlertTriangle,
-  CheckCircle2,
-  AlertOctagon,
-  RefreshCw,
-  History,
+  Plus,
+  AlertCircle,
   Video,
-  MessageSquare,
-  ShieldAlert
+  CheckCircle2,
+  ChevronRight,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import {
@@ -44,554 +37,326 @@ export default function DashboardPage() {
   const [meetings] = useState<Meeting[]>(() => getStoredData('vibe_meetings', INITIAL_MEETINGS));
   const [proposals] = useState<Proposal[]>(() => getStoredData('vibe_proposals', INITIAL_PROPOSALS));
 
-  // Dynamic calculations based strictly on real CRM data
-  const mappedCompaniesCount = leads.length;
+  // Core business calculations
+  const pipelineTotal = opportunities.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
+  const activeContracts = contracts.filter((c) => c.status === 'ATIVO');
+  const mrrTotal = activeContracts.reduce((acc, c) => acc + (c.recurringValue || 0), 0);
   const delayedFollowupsCount = opportunities.filter(
     (o) => o.stage === 'ABORDADO_WHATSAPP' || o.stage === 'REUNIAO_AGENDADA'
   ).length;
-  const pipelineTotal = opportunities.reduce((acc, o) => acc + o.estimatedValue, 0);
-  const weightedRevenue = Math.round(pipelineTotal * 0.5);
-  const activeContracts = contracts.filter((c) => c.status === 'ATIVO');
-  const activeContractsCount = activeContracts.length;
-  const mrrTotal = activeContracts.reduce((acc, c) => acc + c.recurringValue, 0);
-  const pendingProposalsCount = proposals.filter((p) => p.status === 'ENVIADA' || p.status === 'VISUALIZADA').length;
   const riskyProjectsCount = projects.filter((p) => p.riskLevel === 'CRITICO' || p.riskLevel === 'ATENCAO').length;
+  const urgentCount = delayedFollowupsCount + riskyProjectsCount;
 
+  // Stages
   const stageNovo = opportunities.filter((o) => o.stage === 'LEAD_NOVO');
   const stageQualificado = opportunities.filter((o) => o.stage === 'DIAGNOSTICO_GERADO' || o.stage === 'ABORDADO_WHATSAPP');
   const stageAnalise = opportunities.filter((o) => o.stage === 'REUNIAO_AGENDADA');
   const stageProposta = opportunities.filter((o) => o.stage === 'PROPOSTA_ENVIADA');
   const stageNegociacao = opportunities.filter((o) => o.stage === 'FECHADO');
 
-  const stageNovoTotal = stageNovo.reduce((acc, o) => acc + o.estimatedValue, 0);
-  const stageQualificadoTotal = stageQualificado.reduce((acc, o) => acc + o.estimatedValue, 0);
-  const stageAnaliseTotal = stageAnalise.reduce((acc, o) => acc + o.estimatedValue, 0);
-  const stagePropostaTotal = stageProposta.reduce((acc, o) => acc + o.estimatedValue, 0);
-  const stageNegociacaoTotal = stageNegociacao.reduce((acc, o) => acc + o.estimatedValue, 0);
+  const stageNovoTotal = stageNovo.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
+  const stageQualificadoTotal = stageQualificado.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
+  const stageAnaliseTotal = stageAnalise.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
+  const stagePropostaTotal = stageProposta.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
+  const stageNegociacaoTotal = stageNegociacao.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
+
+  const stagesList = [
+    { label: 'Novo Lead', count: stageNovo.length, total: stageNovoTotal, pct: pipelineTotal > 0 ? (stageNovoTotal / pipelineTotal) * 100 : 0 },
+    { label: 'Qualificado', count: stageQualificado.length, total: stageQualificadoTotal, pct: pipelineTotal > 0 ? (stageQualificadoTotal / pipelineTotal) * 100 : 0 },
+    { label: 'Análise Agendada', count: stageAnalise.length, total: stageAnaliseTotal, pct: pipelineTotal > 0 ? (stageAnaliseTotal / pipelineTotal) * 100 : 0 },
+    { label: 'Proposta Enviada', count: stageProposta.length, total: stagePropostaTotal, pct: pipelineTotal > 0 ? (stagePropostaTotal / pipelineTotal) * 100 : 0 },
+    { label: 'Em Fechamento', count: stageNegociacao.length, total: stageNegociacaoTotal, pct: pipelineTotal > 0 ? (stageNegociacaoTotal / pipelineTotal) * 100 : 0 },
+  ];
+
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Daniel';
 
   return (
-    <div className="bg-surface-container-lowest min-h-screen p-4 lg:p-8 space-y-6">
-      {/* Top Operational Banner & Quick Actions */}
-      <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-surface p-6 rounded-xl border border-border-subtle shadow-sm">
-        <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="font-mono text-[11px] text-primary uppercase tracking-wider font-semibold">
-              Centro de Operações Ativas
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight mt-1">
-            Painel Geral
+    <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-8">
+      {/* 1. Header: Clean, Human & Direct */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-semibold text-white tracking-tight">
+            Visão Geral
           </h1>
-          <p className="text-xs text-text-secondary mt-0.5">
-            Bom dia, {user?.name.split(' ')[0] || 'Daniel'}. Aqui está o que precisa de atenção hoje em Manaus, AM.
+          <p className="text-sm text-slate-400 mt-1">
+            Olá, {firstName}. {urgentCount > 0 ? `${urgentCount} pendência${urgentCount > 1 ? 's' : ''} requer${urgentCount > 1 ? 'em' : ''} atenção hoje.` : 'Todas as operações estão em dia.'}
           </p>
         </div>
 
-        {/* Rapid Execution Actions */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Action Buttons: Unified, quiet hierarchy */}
+        <div className="flex items-center gap-2">
           <Link
             href="/prospeccao"
-            className="h-9 px-3 bg-surface-elevated hover:bg-surface-container-high border border-border-subtle text-text-primary text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+            className="h-9 px-3 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
           >
-            <UserPlus className="w-3.5 h-3.5 text-primary" />
-            <span>Criar Lead</span>
+            <UserPlus className="w-3.5 h-3.5 text-slate-400" />
+            <span>Novo Lead</span>
           </Link>
           <Link
             href="/pipeline"
-            className="h-9 px-3 bg-surface-elevated hover:bg-surface-container-high border border-border-subtle text-text-primary text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+            className="h-9 px-3 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
           >
-            <Zap className="w-3.5 h-3.5 text-tertiary" />
-            <span>Nova Oportunidade</span>
-          </Link>
-          <Link
-            href="/agenda"
-            className="h-9 px-3 bg-surface-elevated hover:bg-surface-container-high border border-border-subtle text-text-primary text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
-          >
-            <CalendarCheck className="w-3.5 h-3.5 text-secondary" />
-            <span>Agendar Análise</span>
+            <Plus className="w-3.5 h-3.5 text-slate-400" />
+            <span>Oportunidade</span>
           </Link>
           <Link
             href="/propostas"
-            className="h-9 px-3.5 bg-primary-container hover:bg-primary-hover text-surface-container-lowest text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors shadow-sm shadow-cyan-500/10"
+            className="h-9 px-3.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>Criar Proposta</span>
+            <span>Nova Proposta</span>
           </Link>
         </div>
-      </section>
+      </header>
 
-      {/* 8 High-Density Key Operational Metrics */}
+      {/* 2. Key Metrics: 4 Essential Cards (Substitui os 8 cards sobrecarregados) */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Empresas Mapeadas */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Empresas Mapeadas</span>
-              <Building2 className="w-4 h-4 text-text-disabled group-hover:text-primary transition-colors" />
+        {/* Metric 1: Pipeline Aberto */}
+        <Link
+          href="/pipeline"
+          className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Pipeline Aberto</span>
+            <TrendingUp className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors" />
+          </div>
+          <div className="mt-4">
+            <div className="text-2xl font-semibold text-white tracking-tight">
+              R$ {pipelineTotal.toLocaleString('pt-BR')}
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-text-primary">{mappedCompaniesCount}</span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-success/10 text-success font-mono text-[10px] font-semibold">
-                {mappedCompaniesCount > 0 ? `${mappedCompaniesCount} ativas` : '0 cadastradas'}
+            <div className="text-xs text-slate-400 mt-1">
+              {opportunities.length} negociaç{opportunities.length === 1 ? 'ão ativa' : 'ões ativas'}
+            </div>
+          </div>
+        </Link>
+
+        {/* Metric 2: MRR Ativo */}
+        <Link
+          href="/contratos"
+          className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Receita Recorrente (MRR)</span>
+            <DollarSign className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors" />
+          </div>
+          <div className="mt-4">
+            <div className="text-2xl font-semibold text-white tracking-tight">
+              R$ {mrrTotal.toLocaleString('pt-BR')}
+              <span className="text-xs font-normal text-slate-400 ml-1">/mês</span>
+            </div>
+            <div className="text-xs text-slate-400 mt-1">
+              {activeContracts.length} contrato{activeContracts.length === 1 ? ' ativo' : 's ativos'}
+            </div>
+          </div>
+        </Link>
+
+        {/* Metric 3: Reuniões Agendadas */}
+        <Link
+          href="/agenda"
+          className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Reuniões da Semana</span>
+            <Calendar className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors" />
+          </div>
+          <div className="mt-4">
+            <div className="text-2xl font-semibold text-white tracking-tight">
+              {meetings.length}
+            </div>
+            <div className="text-xs text-slate-400 mt-1 truncate">
+              {meetings.length > 0 ? `Próxima: ${meetings[0].companyName}` : 'Nenhum agendamento'}
+            </div>
+          </div>
+        </Link>
+
+        {/* Metric 4: Atenção Necessária */}
+        <Link
+          href="/pipeline"
+          className="group p-5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Atenção Imediata</span>
+            <AlertCircle className={`w-4 h-4 ${urgentCount > 0 ? 'text-amber-400' : 'text-slate-500'}`} />
+          </div>
+          <div className="mt-4">
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl font-semibold tracking-tight ${urgentCount > 0 ? 'text-amber-400' : 'text-white'}`}>
+                {urgentCount}
               </span>
             </div>
+            <div className="text-xs text-slate-400 mt-1">
+              {delayedFollowupsCount > 0
+                ? `${delayedFollowupsCount} follow-up${delayedFollowupsCount > 1 ? 's' : ''} aguardando`
+                : 'Zero atrasos operacionais'}
+            </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-disabled">
-              {mappedCompaniesCount > 0 ? 'Base qualificada AM' : 'Nenhuma empresa ainda'}
-            </span>
-            <Link href="/empresas" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
+        </Link>
+      </section>
+
+      {/* 3. Pipeline Breakdown: Clean Single Section */}
+      <section className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Funil Comercial</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Distribuição do volume monetário por estágio</p>
           </div>
+          <Link
+            href="/pipeline"
+            className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+          >
+            <span>Ver Kanban</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* 2. Follow-ups Atrasados */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Follow-ups Atrasados</span>
-              <ShieldAlert className="w-4 h-4 text-danger" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-danger">{delayedFollowupsCount}</span>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] font-bold ${
-                delayedFollowupsCount > 0 ? 'bg-danger/15 text-danger' : 'bg-success/15 text-success'
-              }`}>
-                {delayedFollowupsCount > 0 ? 'Ação Imediata' : 'Tudo em dia'}
+        {/* Unified Monochrome Progress Strip */}
+        <div className="w-full h-2 bg-white/[0.04] rounded-full overflow-hidden flex gap-0.5 mb-5">
+          {pipelineTotal > 0 ? (
+            stagesList.map((stg, idx) => {
+              if (stg.pct === 0) return null;
+              const opacities = ['bg-cyan-500/30', 'bg-cyan-500/50', 'bg-cyan-500/70', 'bg-cyan-500/90', 'bg-cyan-400'];
+              return (
+                <div
+                  key={stg.label}
+                  className={`h-full ${opacities[idx % opacities.length]} transition-all`}
+                  style={{ width: `${stg.pct}%` }}
+                  title={`${stg.label}: R$ ${stg.total.toLocaleString('pt-BR')} (${stg.count})`}
+                />
+              );
+            })
+          ) : (
+            <div className="w-full h-full bg-white/[0.04]" />
+          )}
+        </div>
+
+        {/* Stage List Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {stagesList.map((stage) => (
+            <div
+              key={stage.label}
+              className="p-3 rounded-lg bg-white/[0.015] border border-white/[0.04] flex flex-col"
+            >
+              <span className="text-xs text-slate-400 truncate">{stage.label}</span>
+              <span className="text-base font-semibold text-white mt-1">
+                {stage.count}
+              </span>
+              <span className="text-xs text-slate-400 font-medium mt-0.5">
+                R$ {stage.total.toLocaleString('pt-BR')}
               </span>
             </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-disabled">
-              {delayedFollowupsCount > 0 ? 'Tempo médio > 48h' : 'Sem atrasos'}
-            </span>
-            <Link href="/pipeline" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-
-        {/* 3. Pipeline Aberto */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Pipeline Aberto</span>
-              <TrendingUp className="w-4 h-4 text-text-disabled group-hover:text-primary transition-colors" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-text-primary">
-                R$ {pipelineTotal.toLocaleString('pt-BR')}
-              </span>
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-secondary">
-              {opportunities.length} {opportunities.length === 1 ? 'negociação ativa' : 'negociações ativas'}
-            </span>
-            <Link href="/pipeline" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-
-        {/* 4. Receita Ponderada */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Receita Ponderada</span>
-              <Zap className="w-4 h-4 text-text-disabled group-hover:text-primary transition-colors" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-primary">
-                R$ {weightedRevenue.toLocaleString('pt-BR')}
-              </span>
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-disabled">Estimativa ponderada 50%</span>
-            <Link href="/pipeline" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-
-        {/* 5. Análises Esta Semana */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Análises Esta Semana</span>
-              <Calendar className="w-4 h-4 text-text-disabled group-hover:text-secondary transition-colors" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-text-primary">{meetings.length}</span>
-              {meetings.length > 0 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-elevated text-secondary font-mono text-[10px] font-semibold">
-                  {meetings[0].companyName}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-secondary truncate">
-              {meetings.length > 0 ? `${meetings[0].date} às ${meetings[0].time}` : 'Nenhuma reunião agendada'}
-            </span>
-            <Link href="/agenda" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-
-        {/* 6. Propostas Sem Retorno */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Propostas Sem Retorno</span>
-              <FileText className="w-4 h-4 text-warning" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-warning">{pendingProposalsCount}</span>
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-disabled">
-              {pendingProposalsCount > 0 ? 'Aguardando decisão' : 'Nenhuma pendente'}
-            </span>
-            <Link href="/propostas" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-
-        {/* 7. Projetos em Risco */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">Projetos em Risco</span>
-              <AlertTriangle className="w-4 h-4 text-danger" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-danger">{riskyProjectsCount}</span>
-              <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[10px] font-semibold ${
-                riskyProjectsCount > 0 ? 'bg-danger/15 text-danger' : 'bg-success/15 text-success'
-              }`}>
-                {riskyProjectsCount > 0 ? 'Atenção' : 'Normal'}
-              </span>
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-disabled">
-              {riskyProjectsCount > 0 ? 'Gargalo operacional' : 'Zero atrasos'}
-            </span>
-            <Link href="/projetos" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-
-        {/* 8. MRR Ativo */}
-        <div className="bg-surface p-4 rounded-xl border border-border-subtle flex flex-col justify-between hover:bg-surface-elevated transition-colors group">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">MRR Ativo</span>
-              <RefreshCw className="w-4 h-4 text-success" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-success">
-                R$ {mrrTotal.toLocaleString('pt-BR')}
-              </span>
-              <span className="font-mono text-[10px] text-text-secondary">/mês</span>
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-border-subtle/50 flex items-center justify-between">
-            <span className="font-mono text-[11px] text-text-secondary">
-              {activeContractsCount} {activeContractsCount === 1 ? 'contrato ativo' : 'contratos ativos'}
-            </span>
-            <Link href="/contratos" className="font-mono text-[11px] text-primary hover:underline flex items-center gap-1">
-              Ver detalhes <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Main Operational Grid (65% Left / 35% Right) */}
+      {/* 4. Two Columns: Active Projects (60%) & Agenda/Focus (40%) */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Primary Workflow Column (65% width = 8 cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          {/* Comercial Pipeline Funnel Overview */}
-          <div className="bg-surface p-6 rounded-xl border border-border-subtle flex flex-col gap-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  <h2 className="text-base font-bold text-text-primary">
-                    Pipeline Comercial por Etapas
-                  </h2>
-                </div>
-                <p className="text-xs text-text-secondary mt-0.5">
-                  Distribuição do volume monetário em curso
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded bg-surface-elevated border border-emerald-800/40 text-success font-mono text-[11px] font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Fechado Ganho: R$ {stageNegociacaoTotal.toLocaleString('pt-BR')} este ciclo
-                </span>
-              </div>
+        {/* Left: Active Projects */}
+        <div className="lg:col-span-7 p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Projetos em Andamento</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Entregas ativas da agência</p>
             </div>
-
-            {/* Funnel Multi-segment Progress Bar */}
-            <div className="flex flex-col gap-2">
-              <div className="w-full h-3 bg-surface-container rounded-full overflow-hidden flex">
-                {pipelineTotal > 0 ? (
-                  <>
-                    <div
-                      className="h-full bg-primary hover:opacity-90 transition-opacity"
-                      style={{ width: `${(stageNovoTotal / pipelineTotal) * 100}%` }}
-                      title={`Novo Lead: R$ ${stageNovoTotal.toLocaleString('pt-BR')} (${stageNovo.length})`}
-                    />
-                    <div
-                      className="h-full bg-secondary hover:opacity-90 transition-opacity"
-                      style={{ width: `${(stageQualificadoTotal / pipelineTotal) * 100}%` }}
-                      title={`Qualificado: R$ ${stageQualificadoTotal.toLocaleString('pt-BR')} (${stageQualificado.length})`}
-                    />
-                    <div
-                      className="h-full bg-surface-tint hover:opacity-90 transition-opacity"
-                      style={{ width: `${(stageAnaliseTotal / pipelineTotal) * 100}%` }}
-                      title={`Análise Agendada: R$ ${stageAnaliseTotal.toLocaleString('pt-BR')} (${stageAnalise.length})`}
-                    />
-                    <div
-                      className="h-full bg-tertiary hover:opacity-90 transition-opacity"
-                      style={{ width: `${(stagePropostaTotal / pipelineTotal) * 100}%` }}
-                      title={`Proposta Enviada: R$ ${stagePropostaTotal.toLocaleString('pt-BR')} (${stageProposta.length})`}
-                    />
-                    <div
-                      className="h-full bg-warning hover:opacity-90 transition-opacity"
-                      style={{ width: `${(stageNegociacaoTotal / pipelineTotal) * 100}%` }}
-                      title={`Negociação / Fechado: R$ ${stageNegociacaoTotal.toLocaleString('pt-BR')} (${stageNegociacao.length})`}
-                    />
-                  </>
-                ) : (
-                  <div className="h-full bg-surface-elevated w-full" title="Nenhuma oportunidade cadastrada" />
-                )}
-              </div>
-              <div className="flex items-center justify-between text-text-disabled font-mono text-[11px] px-1">
-                <span>R$ 0</span>
-                <span>Total em negociação: R$ {pipelineTotal.toLocaleString('pt-BR')}</span>
-              </div>
-            </div>
-
-            {/* Detailed Stage Breakdown Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-              <Link
-                href="/pipeline"
-                className="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex flex-col hover:border-primary/50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-text-secondary">Novo Lead</span>
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                </div>
-                <span className="text-lg font-bold text-text-primary mt-1">{stageNovo.length}</span>
-                <span className="font-mono text-xs text-primary mt-0.5">R$ {stageNovoTotal.toLocaleString('pt-BR')}</span>
-              </Link>
-              <Link
-                href="/pipeline"
-                className="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex flex-col hover:border-secondary/50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-text-secondary">Qualificado</span>
-                  <span className="w-2 h-2 rounded-full bg-secondary" />
-                </div>
-                <span className="text-lg font-bold text-text-primary mt-1">{stageQualificado.length}</span>
-                <span className="font-mono text-xs text-secondary mt-0.5">R$ {stageQualificadoTotal.toLocaleString('pt-BR')}</span>
-              </Link>
-              <Link
-                href="/pipeline"
-                className="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex flex-col hover:border-cyan-400/50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-text-secondary truncate">Análise</span>
-                  <span className="w-2 h-2 rounded-full bg-surface-tint" />
-                </div>
-                <span className="text-lg font-bold text-text-primary mt-1">{stageAnalise.length}</span>
-                <span className="font-mono text-xs text-surface-tint mt-0.5">R$ {stageAnaliseTotal.toLocaleString('pt-BR')}</span>
-              </Link>
-              <Link
-                href="/pipeline"
-                className="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex flex-col hover:border-tertiary/50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-text-secondary truncate">Proposta</span>
-                  <span className="w-2 h-2 rounded-full bg-tertiary" />
-                </div>
-                <span className="text-lg font-bold text-text-primary mt-1">{stageProposta.length}</span>
-                <span className="font-mono text-xs text-tertiary mt-0.5">R$ {stagePropostaTotal.toLocaleString('pt-BR')}</span>
-              </Link>
-              <Link
-                href="/pipeline"
-                className="p-3 bg-surface-elevated rounded-lg border border-border-subtle flex flex-col col-span-2 sm:col-span-1 hover:border-warning/50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-text-secondary">Negociação</span>
-                  <span className="w-2 h-2 rounded-full bg-warning" />
-                </div>
-                <span className="text-lg font-bold text-text-primary mt-1">{stageNegociacao.length}</span>
-                <span className="font-mono text-xs text-warning mt-0.5">R$ {stageNegociacaoTotal.toLocaleString('pt-BR')}</span>
-              </Link>
-            </div>
+            <Link
+              href="/projetos"
+              className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <span>Ver todos</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          {/* Projetos Operacionais em Andamento */}
-          <div className="bg-surface p-6 rounded-xl border border-border-subtle flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                <h2 className="text-base font-bold text-text-primary">
-                  Projetos em Andamento
-                </h2>
-              </div>
-              <Link
-                href="/projetos"
-                className="font-mono text-xs text-primary hover:underline flex items-center gap-1"
-              >
-                Ver quadro operacional <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+          {projects.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400">
+              Nenhum projeto em andamento.
             </div>
-
-            {projects.length === 0 ? (
-              <div className="p-8 text-center bg-surface-elevated rounded-lg border border-dashed border-border-subtle flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-text-disabled">
-                  <Clock className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-text-primary">Nenhum projeto em andamento</p>
-                  <p className="text-xs text-text-secondary mt-0.5">Cadastre oportunidades ou aprove propostas para iniciar projetos.</p>
-                </div>
-                <Link
-                  href="/projetos"
-                  className="mt-1 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-mono text-xs font-semibold transition-colors"
-                >
-                  + Criar Projeto
-                </Link>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {projects.slice(0, 4).map((p) => (
+          ) : (
+            <div className="divide-y divide-white/[0.04]">
+              {projects.slice(0, 4).map((p) => {
+                const isWarning = p.riskLevel === 'CRITICO' || p.riskLevel === 'ATENCAO';
+                return (
                   <Link
                     key={p.id}
                     href={`/projetos/${p.id}`}
-                    className="bg-surface-elevated border border-border-subtle p-4 rounded-lg flex flex-col gap-3 hover:bg-surface-container-high transition-colors"
+                    className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4 hover:bg-white/[0.01] -mx-2 px-2 rounded-lg transition-colors group"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-lg bg-surface border border-border-subtle flex items-center justify-center text-primary font-mono text-xs font-bold shrink-0">
-                          {p.nomeEmpresa ? p.nomeEmpresa.substring(0, 2).toUpperCase() : 'PR'}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-text-primary font-semibold truncate">
-                              {p.nomeEmpresa}
-                            </span>
-                            <span
-                              className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-semibold ${
-                                p.status === 'CONCLUIDO'
-                                  ? 'bg-success/15 text-success'
-                                  : p.riskLevel === 'CRITICO' || p.riskLevel === 'ATENCAO'
-                                  ? 'bg-danger/15 text-danger'
-                                  : 'bg-primary/10 text-primary'
-                              }`}
-                            >
-                              {p.status.replace('_', ' ')}
-                            </span>
-                          </div>
-                          <span className="text-xs text-text-secondary truncate">
-                            {p.projectType || 'Projeto Digital'}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white truncate group-hover:text-cyan-400 transition-colors">
+                          {p.nomeEmpresa}
+                        </span>
+                        {isWarning && (
+                          <span className="text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded font-medium">
+                            Atenção
                           </span>
-                        </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-4 self-end sm:self-auto shrink-0">
-                        <div className="flex flex-col text-right">
-                          <span className="font-mono text-[10px] text-text-disabled">Prazo</span>
-                          <span className="font-mono text-xs text-text-primary">
-                            {p.dataPrevisao ? new Date(p.dataPrevisao).toLocaleDateString('pt-BR') : 'A definir'}
-                          </span>
-                        </div>
-                        <div
-                          className="w-7 h-7 rounded-full bg-surface-container-highest border border-border-subtle flex items-center justify-center font-mono text-[10px] text-text-primary"
-                          title={`Responsável: ${p.ownerName || 'Daniel Leite'}`}
-                        >
-                          {(p.ownerName || 'DL').substring(0, 2).toUpperCase()}
-                        </div>
+                      <div className="text-xs text-slate-400 mt-0.5 truncate">
+                        {p.projectType || 'Projeto Digital'}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-surface-container rounded-full h-2 overflow-hidden">
-                        <div
-                          className="bg-primary h-full rounded-full transition-all"
-                          style={{ width: `${p.progress || 0}%` }}
-                        />
+
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="w-24 hidden sm:block">
+                        <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                          <span>Progresso</span>
+                          <span>{p.progress || 0}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-cyan-400 rounded-full"
+                            style={{ width: `${p.progress || 0}%` }}
+                          />
+                        </div>
                       </div>
-                      <span className="font-mono text-xs text-text-primary font-semibold">{p.progress || 0}%</span>
+
+                      <div className="text-right text-xs text-slate-400">
+                        {p.dataPrevisao ? new Date(p.dataPrevisao).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Sem prazo'}
+                      </div>
                     </div>
                   </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Secondary Sidebar Column (35% width = 4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Widget: Minha Agenda */}
-          <div className="bg-surface p-6 rounded-xl border border-border-subtle flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-secondary" />
-                <h2 className="text-base font-bold text-text-primary">Minha Agenda</h2>
-              </div>
-              <span className="font-mono text-xs text-text-disabled">{meetings.length} compromissos</span>
+        {/* Right: Agenda & Priority Actions */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Upcoming Meetings */}
+          <div className="p-6 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-white">Compromissos</h2>
+              <Link
+                href="/agenda"
+                className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+              >
+                <span>Agenda</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
             {meetings.length === 0 ? (
-              <div className="p-6 text-center bg-surface-elevated rounded-lg border border-dashed border-border-subtle flex flex-col items-center justify-center gap-2">
-                <Calendar className="w-6 h-6 text-text-disabled" />
-                <p className="text-xs font-semibold text-text-primary">Nenhum compromisso agendado</p>
-                <p className="text-[11px] text-text-secondary">Sua agenda está livre para hoje e próximos dias.</p>
-                <Link
-                  href="/agenda"
-                  className="mt-1 px-3 py-1 bg-surface hover:bg-surface-container-high border border-border-subtle text-primary font-mono text-[11px] rounded transition-colors"
-                >
-                  + Agendar Análise
-                </Link>
+              <div className="py-8 text-center text-xs text-slate-400">
+                Nenhuma reunião agendada para hoje.
               </div>
             ) : (
-              <div className="flex flex-col gap-2.5">
-                {meetings.map((m) => (
+              <div className="space-y-3">
+                {meetings.slice(0, 3).map((m) => (
                   <Link
                     key={m.id}
                     href="/agenda"
-                    className="p-3 bg-surface-elevated border border-border-subtle rounded-lg flex items-start gap-3 hover:bg-surface-container-high transition-colors"
+                    className="p-3 rounded-lg bg-white/[0.015] border border-white/[0.04] hover:border-white/[0.1] transition-colors flex items-start gap-3 group"
                   >
-                    <div className="flex flex-col items-center justify-center w-12 py-1.5 bg-surface border border-border-subtle rounded text-center shrink-0">
-                      <span className="font-mono text-[10px] text-text-secondary uppercase">Data</span>
-                      <span className="font-mono text-xs font-bold text-text-primary">{m.time}</span>
+                    <div className="text-center px-2 py-1 rounded bg-white/[0.04] text-xs font-semibold text-cyan-400 shrink-0">
+                      {m.time}
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-text-primary font-semibold truncate">
-                          {m.companyName}
-                        </span>
-                        <span className="px-1.5 py-0.5 bg-primary/10 text-primary font-mono text-[10px] rounded flex items-center gap-0.5">
-                          <Video className="w-2.5 h-2.5" /> Meet
-                        </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-white truncate group-hover:text-cyan-400 transition-colors">
+                        {m.companyName}
                       </div>
-                      <span className="font-mono text-[11px] text-text-secondary mt-0.5">
-                        {m.contactName}
-                      </span>
-                      <span className="text-[11px] text-text-disabled truncate mt-0.5">
-                        {m.mainBottleneck || m.recommendedOffer || 'Análise comercial'}
-                      </span>
+                      <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+                        {m.contactName} • {m.mainBottleneck || 'Diagnóstico comercial'}
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -599,71 +364,27 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Widget: Atenção Necessária */}
-          <div className="bg-surface p-6 rounded-xl border border-border-subtle flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-warning" />
-                <h2 className="text-base font-bold text-text-primary">Atenção Necessária</h2>
+          {/* Urgent Items if any */}
+          {urgentCount > 0 && (
+            <div className="p-4 rounded-xl bg-amber-500/[0.03] border border-amber-500/20 text-xs">
+              <div className="flex items-center gap-2 text-amber-400 font-medium mb-1">
+                <AlertCircle className="w-4 h-4" />
+                <span>Pendências Prioritárias</span>
               </div>
-              {delayedFollowupsCount > 0 && (
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-danger" />
-                </span>
-              )}
+              <p className="text-slate-300 text-[11px] leading-relaxed">
+                {delayedFollowupsCount > 0 && `${delayedFollowupsCount} oportunidade(s) no pipeline sem retorno há mais de 48h. `}
+                {riskyProjectsCount > 0 && `${riskyProjectsCount} projeto(s) com gargalo ou entrega em risco.`}
+              </p>
+              <Link
+                href="/pipeline"
+                className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:underline font-medium mt-2"
+              >
+                Resolver pendências <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
-
-            {delayedFollowupsCount === 0 && riskyProjectsCount === 0 ? (
-              <div className="p-6 text-center bg-surface-elevated rounded-lg border border-dashed border-border-subtle flex flex-col items-center justify-center gap-2">
-                <CheckCircle2 className="w-6 h-6 text-success" />
-                <p className="text-xs font-semibold text-text-primary">Tudo em dia!</p>
-                <p className="text-[11px] text-text-secondary">Nenhum gargalo, lead atrasado ou alerta crítico ativo no momento.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2.5">
-                {delayedFollowupsCount > 0 && (
-                  <div className="p-3 bg-surface-elevated border border-amber-500/20 rounded-lg flex items-start gap-2.5">
-                    <Clock className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-warning">Follow-ups Pendentes</span>
-                        <span className="font-mono text-[10px] text-text-disabled">{delayedFollowupsCount} alvos</span>
-                      </div>
-                      <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                        Existem oportunidades aguardando contato ou reunião no pipeline.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {riskyProjectsCount > 0 && (
-                  <div className="p-3 bg-surface-elevated border border-rose-500/20 rounded-lg flex items-start gap-2.5">
-                    <AlertTriangle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-danger">Projetos em Atenção</span>
-                        <span className="font-mono text-[10px] text-danger font-bold">{riskyProjectsCount} projetos</span>
-                      </div>
-                      <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                        Projetos com pendências de assets ou prazos críticos.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <Link
-              href="/relatorios"
-              className="w-full py-2 bg-surface hover:bg-surface-elevated border border-border-subtle text-text-secondary hover:text-text-primary rounded-lg font-mono text-xs transition-colors flex items-center justify-center gap-1.5"
-            >
-              <span>Ver histórico de resoluções</span>
-              <History className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+          )}
         </div>
       </section>
     </div>
   );
 }
-
