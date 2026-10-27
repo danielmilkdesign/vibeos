@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Search,
   Download,
@@ -22,7 +22,12 @@ import {
   X,
   MessageSquare,
   ArrowUpRight,
-  Send
+  Send,
+  ChevronDown,
+  FileSpreadsheet,
+  FileCode,
+  FileText,
+  Table
 } from "lucide-react";
 
 interface Lead {
@@ -57,6 +62,23 @@ export default function ProspeccaoPage() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [mainExportOpen, setMainExportOpen] = useState(false);
+  const [bulkExportOpen, setBulkExportOpen] = useState(false);
+  const mainExportRef = useRef<HTMLDivElement>(null);
+  const bulkExportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (mainExportRef.current && !mainExportRef.current.contains(e.target as Node)) {
+        setMainExportOpen(false);
+      }
+      if (bulkExportRef.current && !bulkExportRef.current.contains(e.target as Node)) {
+        setBulkExportOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -117,29 +139,309 @@ export default function ProspeccaoPage() {
   const countWithWebsite = useMemo(() => leads.filter((l) => !!l.website).length, [leads]);
   const countNoWebsite = useMemo(() => leads.filter((l) => !l.website).length, [leads]);
 
-  // Exportação CSV
-  function exportToCSV(exportOnlySelected = false) {
+  type ExportFormat = "csv_br" | "csv_intl" | "excel" | "json" | "txt_whatsapp" | "clipboard";
+
+  function escapeHtml(str: string) {
+    return (str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function downloadFile(content: string, filename: string, mimeType: string) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  const EXPORT_FORMATS_CONFIG: {
+    id: ExportFormat;
+    title: string;
+    ext: string;
+    desc: string;
+    icon: any;
+    colorClass: string;
+  }[] = [
+    {
+      id: "csv_br",
+      title: "Excel / CSV Brasil",
+      ext: ".csv",
+      desc: "Separador ponto e vírgula (;), padrão nacional com acentos",
+      icon: FileSpreadsheet,
+      colorClass: "bg-emerald-950/60 border-emerald-800/50 text-emerald-400",
+    },
+    {
+      id: "csv_intl",
+      title: "Google Sheets / CSV Intl",
+      ext: ".csv",
+      desc: "Separador vírgula (,) para Google Sheets, Notion e CRMs",
+      icon: Table,
+      colorClass: "bg-cyan-950/60 border-cyan-800/50 text-cyan-400",
+    },
+    {
+      id: "excel",
+      title: "Planilha Excel Formatada",
+      ext: ".xls",
+      desc: "Tabela estilizada com cabeçalhos e células estruturadas",
+      icon: FileSpreadsheet,
+      colorClass: "bg-teal-950/60 border-teal-800/50 text-teal-400",
+    },
+    {
+      id: "json",
+      title: "Objeto JSON Estruturado",
+      ext: ".json",
+      desc: "Dados brutos completos com metadados para desenvolvedores",
+      icon: FileCode,
+      colorClass: "bg-purple-950/60 border-purple-800/50 text-purple-400",
+    },
+    {
+      id: "txt_whatsapp",
+      title: "Lista WhatsApp & SDR",
+      ext: ".txt",
+      desc: "Resumo executivo com contatos, links wa.me e lista limpa",
+      icon: FileText,
+      colorClass: "bg-amber-950/60 border-amber-800/50 text-amber-400",
+    },
+  ];
+
+  function handleExport(format: ExportFormat, exportOnlySelected = false) {
     const targetLeads = exportOnlySelected
       ? leads.filter((l) => selectedIds.includes(l.id))
       : filteredLeads;
 
-    if (!targetLeads.length) return;
+    if (!targetLeads.length) {
+      showToast("Nenhum lead disponível para exportar.");
+      return;
+    }
 
-    const header = "Nome,Categoria,Telefone,Website,Avaliacao,Endereco\n";
-    const rows = targetLeads
-      .map(
-        (l) =>
-          `"${(l.name || "").replace(/"/g, '""')}","${(l.category || "").replace(/"/g, '""')}","${l.phone || ""}","${l.website || ""}","${l.rating || ""}","${(l.address || "").replace(/"/g, '""')}"`
-      )
-      .join("\n");
+    const fileSlug = (query || "leads")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "leads";
 
-    const blob = new Blob(["\uFEFF" + header + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `leads-${(query || "export").replace(/\s+/g, "_")}.csv`;
-    link.click();
-    showToast(`✓ Arquivo CSV exportado com ${targetLeads.length} leads.`);
+    const dateSlug = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+
+    if (format === "csv_br") {
+      const header = "Nome da Empresa;Categoria;Telefone;Website;Avaliação;Qtde Avaliações;Endereço\n";
+      const rows = targetLeads
+        .map(
+          (l) =>
+            `"${(l.name || "").replace(/"/g, '""')}";"${(l.category || "").replace(/"/g, '""')}";"${l.phone || ""}";"${l.website || ""}";"${l.rating || ""}";"${l.ratingCount || ""}";"${(l.address || "").replace(/"/g, '""')}"`
+        )
+        .join("\n");
+      downloadFile(
+        "\uFEFF" + header + rows,
+        `leads-${fileSlug}-excel-br-${dateSlug}.csv`,
+        "text/csv;charset=utf-8;"
+      );
+      showToast(`✓ CSV Brasil (;) exportado com ${targetLeads.length} leads.`);
+    } else if (format === "csv_intl") {
+      const header = "Company Name,Category,Phone,Website,Rating,Reviews Count,Address\n";
+      const rows = targetLeads
+        .map(
+          (l) =>
+            `"${(l.name || "").replace(/"/g, '""')}","${(l.category || "").replace(/"/g, '""')}","${l.phone || ""}","${l.website || ""}","${l.rating || ""}","${l.ratingCount || ""}","${(l.address || "").replace(/"/g, '""')}"`
+        )
+        .join("\n");
+      downloadFile(
+        "\uFEFF" + header + rows,
+        `leads-${fileSlug}-sheets-${dateSlug}.csv`,
+        "text/csv;charset=utf-8;"
+      );
+      showToast(`✓ CSV Internacional (,) exportado com ${targetLeads.length} leads.`);
+    } else if (format === "excel") {
+      const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <style>
+    th { background-color: #0891b2; color: #ffffff; font-weight: bold; border: 0.5pt solid #cbd5e1; padding: 8px; text-align: left; font-family: sans-serif; font-size: 11px; }
+    td { border: 0.5pt solid #e2e8f0; padding: 6px; font-family: sans-serif; font-size: 11px; }
+    .even { background-color: #f8fafc; }
+  </style>
+</head>
+<body>
+  <table>
+    <thead>
+      <tr>
+        <th>Nome da Empresa</th>
+        <th>Categoria</th>
+        <th>Telefone / WhatsApp</th>
+        <th>Website</th>
+        <th>Avaliação</th>
+        <th>Total Avaliações</th>
+        <th>Endereço</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${targetLeads
+        .map(
+          (l, idx) => `
+        <tr class="${idx % 2 === 0 ? "even" : ""}">
+          <td>${escapeHtml(l.name)}</td>
+          <td>${escapeHtml(l.category)}</td>
+          <td>${escapeHtml(l.phone || "")}</td>
+          <td>${escapeHtml(l.website || "")}</td>
+          <td>${l.rating || ""}</td>
+          <td>${l.ratingCount || ""}</td>
+          <td>${escapeHtml(l.address || "")}</td>
+        </tr>`
+        )
+        .join("")}
+    </tbody>
+  </table>
+</body>
+</html>`;
+      downloadFile(
+        "\uFEFF" + html,
+        `leads-${fileSlug}-${dateSlug}.xls`,
+        "application/vnd.ms-excel;charset=utf-8;"
+      );
+      showToast(`✓ Planilha Excel (.xls) exportada com ${targetLeads.length} leads.`);
+    } else if (format === "json") {
+      const payload = {
+        exportDate: new Date().toISOString(),
+        nicheQuery: query || "Geral",
+        location: location || "Brasil",
+        totalLeads: targetLeads.length,
+        leads: targetLeads.map((l) => ({
+          id: l.id,
+          name: l.name,
+          category: l.category,
+          phone: l.phone,
+          website: l.website,
+          rating: l.rating,
+          ratingCount: l.ratingCount,
+          address: l.address,
+          status: l.status,
+        })),
+      };
+      downloadFile(
+        JSON.stringify(payload, null, 2),
+        `leads-${fileSlug}-${dateSlug}.json`,
+        "application/json;charset=utf-8;"
+      );
+      showToast(`✓ Arquivo JSON exportado com ${targetLeads.length} leads.`);
+    } else if (format === "txt_whatsapp") {
+      const dateStr = new Date().toLocaleDateString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      const cleanNumbers = targetLeads
+        .map((l) => (l.phone ? l.phone.replace(/\D/g, "") : null))
+        .filter(Boolean);
+
+      let txt = `====================================================================\n`;
+      txt += `VIBE OS • LISTA DE PROSPECÇÃO OUTBOUND & SDR\n`;
+      txt += `Nicho / Busca: ${query || "Todos"}\n`;
+      txt += `Região: ${location || "Não especificada"}\n`;
+      txt += `Total de Leads: ${targetLeads.length}\n`;
+      txt += `Data da Extração: ${dateStr}\n`;
+      txt += `====================================================================\n\n`;
+
+      targetLeads.forEach((l, i) => {
+        const clean = l.phone ? l.phone.replace(/\D/g, "") : null;
+        txt += `[${i + 1}] ${l.name.toUpperCase()}\n`;
+        txt += `    • Telefone: ${l.phone || "Sem telefone cadastrado"}\n`;
+        txt += `    • WhatsApp Link: ${clean ? `https://wa.me/55${clean}` : "N/A"}\n`;
+        txt += `    • Website: ${l.website || "Sem website indexado (Oportunidade)"}\n`;
+        txt += `    • Categoria: ${l.category}\n`;
+        if (l.rating) txt += `    • Avaliação: ${l.rating} ⭐ (${l.ratingCount || 0} avaliações)\n`;
+        if (l.address) txt += `    • Endereço: ${l.address}\n`;
+        txt += `--------------------------------------------------------------------\n`;
+      });
+
+      if (cleanNumbers.length > 0) {
+        txt += `\n\n====================================================================\n`;
+        txt += `LISTA RÁPIDA DE WHATSAPP / TELEFONES (${cleanNumbers.length} NÚMEROS):\n`;
+        txt += `====================================================================\n`;
+        cleanNumbers.forEach((n) => {
+          txt += `${n}\n`;
+        });
+      }
+
+      downloadFile(
+        txt,
+        `leads-${fileSlug}-whatsapp-${dateSlug}.txt`,
+        "text/plain;charset=utf-8;"
+      );
+      showToast(`✓ Lista WhatsApp / TXT exportada com ${targetLeads.length} contatos.`);
+    } else if (format === "clipboard") {
+      const header = "Nome\tCategoria\tTelefone\tWebsite\tAvaliação\tTotal Avaliações\tEndereço\n";
+      const rows = targetLeads
+        .map(
+          (l) =>
+            `${(l.name || "").replace(/[\t\n\r]/g, " ")}\t${(l.category || "").replace(/[\t\n\r]/g, " ")}\t${(l.phone || "").replace(/[\t\n\r]/g, " ")}\t${(l.website || "").replace(/[\t\n\r]/g, " ")}\t${l.rating || ""}\t${l.ratingCount || ""}\t${(l.address || "").replace(/[\t\n\r]/g, " ")}`
+        )
+        .join("\n");
+      navigator.clipboard.writeText(header + rows);
+      showToast(`✓ ${targetLeads.length} leads copiados como tabela! Cole no Excel ou Sheets (Ctrl+V).`);
+    }
+  }
+
+  function renderExportMenu(isBulk: boolean, onClose: () => void) {
+    const count = isBulk ? selectedIds.length : filteredLeads.length;
+    return (
+      <div className="absolute right-0 mt-2 w-80 bg-[#0A0F1D] border border-slate-700/80 rounded-2xl shadow-2xl p-2 z-50 text-xs backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-800/80 mb-1 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <Download className="w-3 h-3 text-cyan-400" />
+            Formatos de Exportação
+          </span>
+          <span className="text-cyan-400 font-mono font-semibold">{count} lead{count > 1 ? "s" : ""}</span>
+        </div>
+
+        <div className="space-y-0.5">
+          {EXPORT_FORMATS_CONFIG.map((opt) => {
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => {
+                  handleExport(opt.id, isBulk);
+                  onClose();
+                }}
+                className="w-full text-left p-2 rounded-xl hover:bg-slate-800/80 transition-colors flex items-start gap-2.5 group cursor-pointer"
+              >
+                <div className={`p-1.5 rounded-lg border shrink-0 group-hover:scale-105 transition-transform ${opt.colorClass}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-slate-100 flex items-center justify-between">
+                    <span>{opt.title}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 bg-white/[0.04] text-slate-400 border border-white/[0.06] rounded">
+                      {opt.ext}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    {opt.desc}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-slate-800/80 mt-1.5 pt-1.5">
+          <button
+            onClick={() => {
+              handleExport("clipboard", isBulk);
+              onClose();
+            }}
+            className="w-full text-left p-2 rounded-xl hover:bg-cyan-950/40 text-cyan-400 hover:text-cyan-300 font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <Copy className="w-4 h-4 shrink-0 text-cyan-400" />
+            <span>Copiar Tabela (Colar no Excel/Sheets)</span>
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Copiar telefone com feedback
@@ -262,15 +564,21 @@ export default function ProspeccaoPage() {
         </div>
 
         {leads.length > 0 && (
-          <div className="flex items-center gap-2 self-start md:self-auto">
+          <div className="relative self-start md:self-auto" ref={mainExportRef}>
             <button
-              onClick={() => exportToCSV(false)}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700/80 flex items-center gap-2 transition-all hover:border-slate-600 shadow-sm"
-              title="Exportar todos os leads exibidos"
+              onClick={() => setMainExportOpen((prev) => !prev)}
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700/80 flex items-center gap-2 transition-all hover:border-slate-600 shadow-sm cursor-pointer"
+              title="Exportar todos os leads exibidos em múltiplos formatos"
             >
               <Download className="w-4 h-4 text-cyan-400" />
-              Exportar CSV ({filteredLeads.length})
+              <span>Exportar Resultados ({filteredLeads.length})</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                  mainExportOpen ? "rotate-180 text-cyan-400" : ""
+                }`}
+              />
             </button>
+            {mainExportOpen && renderExportMenu(false, () => setMainExportOpen(false))}
           </div>
         )}
       </div>
@@ -472,13 +780,22 @@ export default function ProspeccaoPage() {
                 <span className="text-xs text-slate-300 font-medium">
                   {selectedIds.length} selecionado{selectedIds.length > 1 ? "s" : ""}
                 </span>
-                <button
-                  onClick={() => exportToCSV(true)}
-                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5 text-cyan-400" />
-                  Exportar
-                </button>
+                <div className="relative" ref={bulkExportRef}>
+                  <button
+                    onClick={() => setBulkExportOpen((prev) => !prev)}
+                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Exportar leads selecionados em múltiplos formatos"
+                  >
+                    <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Exportar ({selectedIds.length})</span>
+                    <ChevronDown
+                      className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${
+                        bulkExportOpen ? "rotate-180 text-cyan-400" : ""
+                      }`}
+                    />
+                  </button>
+                  {bulkExportOpen && renderExportMenu(true, () => setBulkExportOpen(false))}
+                </div>
                 <button
                   onClick={handleBulkSaveToCRM}
                   disabled={savingId === "BULK"}
