@@ -5,7 +5,7 @@ import AppLayoutWrapper from '../components/Layout/AppLayoutWrapper';
 
 export const metadata: Metadata = {
   title: 'VIBE OS — Sistema Comercial, Operacional & CRM',
-  description: 'Sistema Operacional Comercial da VIBE Design Tech',
+  description: 'O sistema operacional e comercial da VIBE Design Tech',
 };
 
 export default function RootLayout({

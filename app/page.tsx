@@ -75,6 +75,12 @@ export default function DashboardPage() {
       {/* 1. Header: Clean, Human & Direct */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
         <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+            <span className="text-xs font-mono font-medium text-slate-400 tracking-wide">
+              O sistema operacional e comercial da VIBE Design Tech
+            </span>
+          </div>
           <h1 className="text-xl lg:text-2xl font-semibold text-white tracking-tight">
             Visão Geral
           </h1>

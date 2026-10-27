@@ -87,7 +87,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight text-white leading-tight mb-5">
-            O sistema operacional comercial e operacional da{' '}
+            O sistema operacional e comercial da{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#06B6D4] via-teal-300 to-sky-400">
               VIBE Design Tech.
             </span>

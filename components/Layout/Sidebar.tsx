@@ -70,7 +70,7 @@ export default function Sidebar() {
     <aside className="w-60 bg-[#090D16] border-r border-white/[0.06] z-50 flex flex-col justify-between select-none h-screen sticky top-0 shrink-0 hidden lg:flex">
       <div className="flex flex-col flex-1 min-h-0">
         {/* Brand Header */}
-        <div className="h-14 px-4 flex items-center gap-2.5 border-b border-white/[0.06]">
+        <div className="h-14 px-4 flex items-center gap-2.5 border-b border-white/[0.06]" title="O sistema operacional e comercial da VIBE Design Tech">
           <div className="w-7 h-7 rounded-md bg-cyan-400 text-slate-950 flex items-center justify-center font-bold text-xs tracking-tight">
             V
           </div>
