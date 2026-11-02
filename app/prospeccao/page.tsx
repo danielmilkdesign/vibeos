@@ -27,8 +27,13 @@ import {
   FileSpreadsheet,
   FileCode,
   FileText,
-  Table
+  Table,
+  BarChart3
 } from "lucide-react";
+import { getStoredData, setStoredData } from "../../lib/crm-store";
+import { Opportunity } from "../../types/crm";
+import { useAuth } from "../../lib/auth-context";
+import LeadAnalysisModal from "../../components/CRM/LeadAnalysisModal";
 
 interface Lead {
   id: string;
@@ -51,6 +56,7 @@ const QUICK_SUGGESTIONS = [
 ];
 
 export default function ProspeccaoPage() {
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("Curitiba - PR");
   const [loading, setLoading] = useState(false);
@@ -61,6 +67,7 @@ export default function ProspeccaoPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [analysisLead, setAnalysisLead] = useState<Lead | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mainExportOpen, setMainExportOpen] = useState(false);
   const [bulkExportOpen, setBulkExportOpen] = useState(false);
@@ -452,6 +459,38 @@ export default function ProspeccaoPage() {
     showToast("Telefone copiado para a área de transferência!");
   }
 
+  // Persiste a oportunidade no pipeline (localStorage) — mesmo store lido pela tela /pipeline.
+  function persistOpportunity(lead: Lead) {
+    const existing = getStoredData<Opportunity[]>("vibe_opps", []);
+    const already = existing.some(
+      (o) => o.companyName.toLowerCase() === lead.name.toLowerCase()
+    );
+    if (already) return;
+
+    const opp: Opportunity = {
+      id: `opp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      companyId: `comp_${lead.id}`,
+      title: lead.website
+        ? "Presença Própria + Tráfego Local"
+        : "Presença Própria (Sem site — oportunidade)",
+      companyName: lead.name,
+      decisorName: "Decisor a confirmar",
+      offerName: "Presença Própria (SLA 7d)",
+      setupValue: 1500,
+      recurringValue: 99,
+      estimatedValue: 2500,
+      probability: 30,
+      stage: "LEAD_NOVO",
+      nextAction: "Agendar análise estratégica de 20 min",
+      nextActionDate: new Date(Date.now() + 2 * 86400000).toISOString(),
+      ownerName: user?.name || "Daniel Leite",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setStoredData("vibe_opps", [opp, ...existing]);
+  }
+
   // Salvar Lead individual no CRM
   async function handleSaveToCRM(lead: Lead) {
     setSavingId(lead.id);
@@ -472,6 +511,7 @@ export default function ProspeccaoPage() {
       });
 
       if (res.ok) {
+        persistOpportunity(lead);
         setSavedIds((prev) => [...prev, lead.id]);
         showToast(`✓ "${lead.name}" importado para o Pipeline do CRM!`);
       } else {
@@ -494,7 +534,7 @@ export default function ProspeccaoPage() {
 
     for (const lead of toSave) {
       try {
-        await fetch("/api/leads", {
+        const res = await fetch("/api/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -508,7 +548,10 @@ export default function ProspeccaoPage() {
             valorEstimado: 2500,
           }),
         });
-        count++;
+        if (res.ok) {
+          persistOpportunity(lead);
+          count++;
+        }
       } catch (err) {
         console.error("Erro ao salvar lote:", err);
       }
@@ -542,6 +585,11 @@ export default function ProspeccaoPage() {
           <Sparkles className="w-5 h-5 text-cyan-400 shrink-0" />
           <span className="text-sm font-medium">{toastMessage}</span>
         </div>
+      )}
+
+      {/* Modal de Análise da Empresa + Proposta via WhatsApp */}
+      {analysisLead && (
+        <LeadAnalysisModal lead={analysisLead} onClose={() => setAnalysisLead(null)} />
       )}
 
       {/* Header com Design System VIBE */}
@@ -954,8 +1002,16 @@ export default function ProspeccaoPage() {
                           )}
                         </td>
 
-                        {/* Ação: Salvar no CRM */}
+                        {/* Ações: Analisar + Salvar no CRM */}
                         <td className="p-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setAnalysisLead(lead)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-cyan-900/50 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/40 transition-all"
+                            title="Analisar empresa (posicionamento, logo, site, redes, WhatsApp)"
+                          >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             onClick={() => handleSaveToCRM(lead)}
                             disabled={isSaved || savingId === lead.id}
@@ -979,6 +1035,7 @@ export default function ProspeccaoPage() {
                               </>
                             )}
                           </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1075,28 +1132,38 @@ export default function ProspeccaoPage() {
                     )}
                   </div>
 
-                  {/* Ação Salvar */}
-                  <button
-                    onClick={() => handleSaveToCRM(lead)}
-                    disabled={isSaved || savingId === lead.id}
-                    className={`w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-                      isSaved
-                        ? "bg-emerald-950/80 border border-emerald-800 text-emerald-400"
-                        : "bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white border border-slate-700"
-                    }`}
-                  >
-                    {isSaved ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Importado no Pipeline
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-3.5 h-3.5" />
-                        Importar para CRM
-                      </>
-                    )}
-                  </button>
+                  {/* Ações: Analisar + Salvar */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setAnalysisLead(lead)}
+                      className="py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all bg-slate-800 hover:bg-cyan-900/50 text-slate-200 hover:text-cyan-300 border border-slate-700"
+                      title="Analisar empresa"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      Analisar
+                    </button>
+                    <button
+                      onClick={() => handleSaveToCRM(lead)}
+                      disabled={isSaved || savingId === lead.id}
+                      className={`flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                        isSaved
+                          ? "bg-emerald-950/80 border border-emerald-800 text-emerald-400"
+                          : "bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white border border-slate-700"
+                      }`}
+                    >
+                      {isSaved ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Importado no Pipeline
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-3.5 h-3.5" />
+                          Importar para CRM
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               );
             })}
