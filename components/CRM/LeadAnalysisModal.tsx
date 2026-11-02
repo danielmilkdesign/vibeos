@@ -166,16 +166,33 @@ export default function LeadAnalysisModal({
     }
   };
 
-  const downloadImage = (img: ImagemProposta, empresa: string) => {
-    const blob = new Blob([img.svg], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${empresa.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${img.type}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const downloadPNG = (img: ImagemProposta, empresa: string) => {
+    const w = parseInt(img.svg.match(/width="(\d+)"/)?.[1] || '1200', 10);
+    const h = parseInt(img.svg.match(/height="(\d+)"/)?.[1] || '630', 10);
+    const url = URL.createObjectURL(new Blob([img.svg], { type: 'image/svg+xml;charset=utf-8' }));
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#0A0F1D';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(image, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `${empresa.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${img.type}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }, 'image/png');
+      }
+    };
+    image.src = url;
   };
 
   const handleShowProposta = () => {
@@ -310,9 +327,9 @@ export default function LeadAnalysisModal({
                         <div className="p-2 flex items-center justify-between gap-2">
                           <span className="text-[11px] text-slate-400 truncate">{img.title}</span>
                           <button
-                            onClick={() => downloadImage(img, lead.name)}
+                            onClick={() => downloadPNG(img, lead.name)}
                             className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-800 rounded transition-colors"
-                            title="Baixar imagem"
+                            title="Baixar imagem (PNG)"
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
