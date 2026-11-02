@@ -34,6 +34,7 @@ import { getStoredData, setStoredData } from "../../lib/crm-store";
 import { Opportunity } from "../../types/crm";
 import { useAuth } from "../../lib/auth-context";
 import LeadAnalysisModal from "../../components/CRM/LeadAnalysisModal";
+import BulkAnalysisModal from "../../components/CRM/BulkAnalysisModal";
 
 interface Lead {
   id: string;
@@ -68,6 +69,7 @@ export default function ProspeccaoPage() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [analysisLead, setAnalysisLead] = useState<Lead | null>(null);
+  const [bulkAnalysisOpen, setBulkAnalysisOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mainExportOpen, setMainExportOpen] = useState(false);
   const [bulkExportOpen, setBulkExportOpen] = useState(false);
@@ -592,6 +594,14 @@ export default function ProspeccaoPage() {
         <LeadAnalysisModal lead={analysisLead} onClose={() => setAnalysisLead(null)} />
       )}
 
+      {/* Modal de Análise em Lote (selecionados) */}
+      {bulkAnalysisOpen && (
+        <BulkAnalysisModal
+          leads={leads.filter((l) => selectedIds.includes(l.id))}
+          onClose={() => setBulkAnalysisOpen(false)}
+        />
+      )}
+
       {/* Header com Design System VIBE */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
         <div>
@@ -844,6 +854,14 @@ export default function ProspeccaoPage() {
                   </button>
                   {bulkExportOpen && renderExportMenu(true, () => setBulkExportOpen(false))}
                 </div>
+                <button
+                  onClick={() => setBulkAnalysisOpen(true)}
+                  className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Analisar selecionados e gerar propostas com texto + imagens"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Analisar ({selectedIds.length})
+                </button>
                 <button
                   onClick={handleBulkSaveToCRM}
                   disabled={savingId === "BULK"}

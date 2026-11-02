@@ -17,6 +17,7 @@ import {
   Check,
   AlertCircle,
   TrendingUp,
+  Download,
 } from 'lucide-react';
 import { getStoredData, setStoredData } from '../../lib/crm-store';
 import { Proposal } from '../../types/crm';
@@ -47,38 +48,26 @@ interface Analise {
   ofertaRecomendada: string;
 }
 
+interface ImagemProposta {
+  type: 'site' | 'automacao' | 'redes' | 'logo';
+  title: string;
+  svg: string;
+  dataUri: string;
+}
+
+interface Proposta {
+  oferta: string;
+  setupValue: number;
+  recurringValue: number;
+  escopo: string;
+  texto: string;
+  imagens: ImagemProposta[];
+}
+
 const PRIORIDADE_COLOR: Record<string, string> = {
   ALTA: 'bg-emerald-950 text-emerald-400 border-emerald-800',
   MEDIA: 'bg-amber-950 text-amber-400 border-amber-800',
   BAIXA: 'bg-slate-800 text-slate-300 border-slate-700',
-};
-
-const OFERTA_PRESETS: Record<string, { setup: number; recorrencia: number; escopo: string }> = {
-  'Presença Própria': {
-    setup: 1500,
-    recorrencia: 99,
-    escopo: 'Site institucional de alta conversão + hospedagem em nuvem + SSL + WhatsApp integrado (SLA 7 dias).',
-  },
-  'Esteira de Crescimento': {
-    setup: 2200,
-    recorrencia: 890,
-    escopo: 'Landing page de alta conversão + 5 artes sociais mensais + relatório de performance.',
-  },
-  'Plano 5 Artes': {
-    setup: 0,
-    recorrencia: 490,
-    escopo: 'Franquia mensal de 5 artes digitais para redes sociais com aprovação em 24h.',
-  },
-  'Plano 12 Artes': {
-    setup: 0,
-    recorrencia: 1290,
-    escopo: 'Franquia mensal de 12 artes e carrosséis com roteiro de copywriting.',
-  },
-  'Solução para Clínicas': {
-    setup: 3200,
-    recorrencia: 490,
-    escopo: 'Sistema de agendamento online + landing page de autoridade + conformidade.',
-  },
 };
 
 function cleanWhatsApp(phone: string | null | undefined): string | null {
@@ -97,8 +86,8 @@ export default function LeadAnalysisModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analise, setAnalise] = useState<Analise | null>(null);
-  const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [waText, setWaText] = useState('');
+  const [proposta, setProposta] = useState<Proposta | null>(null);
+  const [showProposta, setShowProposta] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendState, setSendState] = useState<'idle' | 'sent' | 'error' | 'not_configured'>('idle');
@@ -124,10 +113,11 @@ export default function LeadAnalysisModal({
           }),
         });
         const data = await res.json();
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Falha ao analisar a empresa.');
+        if (!res.ok || !data.success) throw new Error(data.error || 'Falha ao analisar a empresa.');
+        if (!cancelled) {
+          setAnalise(data.analise);
+          setProposta(data.proposta || null);
         }
-        if (!cancelled) setAnalise(data.analise);
       } catch (e: any) {
         if (!cancelled) setError(e.message || 'Erro ao analisar a empresa.');
       } finally {
@@ -139,42 +129,10 @@ export default function LeadAnalysisModal({
     };
   }, [lead]);
 
-  const handleGerarProposta = () => {
-    if (!analise) return;
-    const preset = OFERTA_PRESETS[analise.ofertaRecomendada] || OFERTA_PRESETS['Presença Própria'];
-    const existing = getStoredData<Proposal[]>('vibe_proposals', []);
-    const number = existing.length + 1;
-
-    const nova: Proposal = {
-      id: `prop-${Date.now()}`,
-      proposalNumber: `VIBE-2026-${String(number).padStart(3, '0')}`,
-      clientName: analise.empresa,
-      clientEmail: 'cliente@vibe.tech',
-      clientPhone: lead.phone || undefined,
-      offerTitle: analise.ofertaRecomendada,
-      setupValue: preset.setup,
-      recurringValue: preset.recorrencia,
-      billingPeriod: preset.recorrencia > 0 ? 'MENSAL' : 'UNICO',
-      validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-      status: 'RASCUNHO',
-      scopeText: preset.escopo,
-      paymentTerms: '50% de entrada + 50% na aprovação final',
-      isCustom: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updated = [nova, ...existing];
-    setStoredData('vibe_proposals', updated);
-    setProposal(nova);
-
-    const periodo = nova.billingPeriod === 'MENSAL' ? '/mês' : '';
-    const texto = `*PROPOSTA COMERCIAL VIBE DESIGN TECH*\nRef: ${nova.proposalNumber}\nCliente: ${nova.clientName}\n\n*Oferta:* ${nova.offerTitle}\n*Setup Inicial:* R$ ${nova.setupValue.toLocaleString('pt-BR')}\n*Recorrência:* ${nova.recurringValue > 0 ? `R$ ${nova.recurringValue.toLocaleString('pt-BR')}${periodo}` : 'Sem recorrência'}\n*Condições:* ${nova.paymentTerms}\n*Validade:* até ${nova.validUntil}\n\n*Escopo de Entrega:*\n${nova.scopeText}\n\n_Para aprovar e dar início ao projeto, responda esta mensagem._`;
-    setWaText(texto);
-  };
-
   const handleCopy = async () => {
+    if (!proposta) return;
     try {
-      await navigator.clipboard.writeText(waText);
+      await navigator.clipboard.writeText(proposta.texto);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
@@ -183,7 +141,7 @@ export default function LeadAnalysisModal({
   };
 
   const handleAutoSend = async () => {
-    if (!proposal || !waText || !waNumber) return;
+    if (!proposta) return;
     setSending(true);
     setSendState('idle');
     setSendError('');
@@ -191,14 +149,12 @@ export default function LeadAnalysisModal({
       const res = await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: lead.phone, message: waText }),
+        body: JSON.stringify({ phone: lead.phone, message: proposta.texto }),
       });
       const data = await res.json();
-      if (res.ok && data.success) {
-        setSendState('sent');
-      } else if (data.configured === false) {
-        setSendState('not_configured');
-      } else {
+      if (res.ok && data.success) setSendState('sent');
+      else if (data.configured === false) setSendState('not_configured');
+      else {
         setSendState('error');
         setSendError(data.error || 'Falha no envio automático.');
       }
@@ -210,14 +166,50 @@ export default function LeadAnalysisModal({
     }
   };
 
+  const downloadImage = (img: ImagemProposta, empresa: string) => {
+    const blob = new Blob([img.svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${empresa.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${img.type}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShowProposta = () => {
+    if (proposta && analise) {
+      const existing = getStoredData<Proposal[]>('vibe_proposals', []);
+      const nova: Proposal = {
+        id: `prop-${Date.now()}`,
+        proposalNumber: `VIBE-2026-${String(existing.length + 1).padStart(3, '0')}`,
+        clientName: analise.empresa,
+        clientEmail: 'cliente@vibe.tech',
+        clientPhone: lead.phone || undefined,
+        offerTitle: proposta.oferta,
+        setupValue: proposta.setupValue,
+        recurringValue: proposta.recurringValue,
+        billingPeriod: proposta.recurringValue > 0 ? 'MENSAL' : 'UNICO',
+        validUntil: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+        status: 'RASCUNHO',
+        scopeText: proposta.escopo,
+        paymentTerms: '50% de entrada + 50% na aprovação final',
+        isCustom: false,
+        createdAt: new Date().toISOString(),
+      };
+      setStoredData('vibe_proposals', [nova, ...existing]);
+    }
+    setShowProposta(true);
+  };
+
   const waNumber = cleanWhatsApp(lead.phone);
-  const waLink = proposal && waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}` : null;
+  const waLink = proposta && waNumber ? `https://wa.me/${waNumber}?text=${encodeURIComponent(proposta.texto)}` : null;
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#0E1422] border border-white/[0.08] w-full max-w-2xl rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-[#0E1422] border-b border-white/[0.08] p-5 flex items-start justify-between gap-3">
+      <div className="bg-[#0E1422] border border-white/[0.08] w-full max-w-3xl rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto">
+        <div className="sticky top-0 z-10 bg-[#0E1422] border-b border-white/[0.08] p-5 flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-800 flex items-center justify-center text-cyan-400 shrink-0">
               <BarChart3 className="w-5 h-5" />
@@ -252,9 +244,8 @@ export default function LeadAnalysisModal({
             </div>
           )}
 
-          {analise && !loading && !error && !proposal && (
+          {analise && !loading && !error && !showProposta && (
             <>
-              {/* Score + Prioridade */}
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 rounded-2xl bg-cyan-950/50 border border-cyan-800 flex flex-col items-center justify-center">
                   <span className="text-2xl font-extrabold text-cyan-300">{analise.score}</span>
@@ -271,77 +262,73 @@ export default function LeadAnalysisModal({
                 </div>
               </div>
 
-              {/* Posicionamento */}
-              <DiagnosticoCard
-                icon={<Star className="w-4 h-4 text-amber-400" />}
-                title="Posicionamento"
-                text={analise.posicionamento.resumo}
-                badge={analise.posicionamento.forca}
-              />
+              <DiagnosticoCard icon={<Star className="w-4 h-4 text-amber-400" />} title="Posicionamento" text={analise.posicionamento.resumo} badge={analise.posicionamento.forca} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <DiagnosticoCard
-                  icon={<ImageIcon className="w-4 h-4 text-violet-400" />}
-                  title="Logo"
-                  text={analise.logo.recomendacao}
-                  badge={analise.logo.temLogo ? 'Detectada' : 'Ausente'}
-                />
-                <DiagnosticoCard
-                  icon={<Globe className="w-4 h-4 text-cyan-400" />}
-                  title="Site"
-                  text={analise.site.recomendacao}
-                  badge={analise.site.temSite ? 'Possui site' : 'Sem site'}
-                />
-                <DiagnosticoCard
-                  icon={<Instagram className="w-4 h-4 text-pink-400" />}
-                  title="Redes Sociais"
-                  text={analise.redesSociais.recomendacao}
-                  badge={analise.redesSociais.temInstagram ? analise.redesSociais.instagram || 'Ativo' : 'Ausente'}
-                />
-                <DiagnosticoCard
-                  icon={<MessageCircle className="w-4 h-4 text-emerald-400" />}
-                  title="Automação WhatsApp"
-                  text={analise.automacaoWhatsapp.recomendacao}
-                  badge={analise.automacaoWhatsapp.temWhatsapp ? 'WhatsApp ativo' : 'Sem WhatsApp'}
-                />
+                <DiagnosticoCard icon={<ImageIcon className="w-4 h-4 text-violet-400" />} title="Logo" text={analise.logo.recomendacao} badge={analise.logo.temLogo ? 'Detectada' : 'Ausente'} />
+                <DiagnosticoCard icon={<Globe className="w-4 h-4 text-cyan-400" />} title="Site" text={analise.site.recomendacao} badge={analise.site.temSite ? 'Possui site' : 'Sem site'} />
+                <DiagnosticoCard icon={<Instagram className="w-4 h-4 text-pink-400" />} title="Redes Sociais" text={analise.redesSociais.recomendacao} badge={analise.redesSociais.temInstagram ? analise.redesSociais.instagram || 'Ativo' : 'Ausente'} />
+                <DiagnosticoCard icon={<MessageCircle className="w-4 h-4 text-emerald-400" />} title="Automação WhatsApp" text={analise.automacaoWhatsapp.recomendacao} badge={analise.automacaoWhatsapp.temWhatsapp ? 'WhatsApp ativo' : 'Sem WhatsApp'} />
               </div>
 
               <button
-                onClick={handleGerarProposta}
+                onClick={handleShowProposta}
                 className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/25 transition-all cursor-pointer"
               >
                 <FileText className="w-4 h-4" />
-                Gerar Proposta e Enviar por WhatsApp
+                Gerar Proposta (texto + imagens)
               </button>
             </>
           )}
 
-          {proposal && (
+          {analise && proposta && showProposta && (
             <>
-              {/* Proposta gerada */}
               <div className="bg-cyan-950/30 border border-cyan-800/40 rounded-xl p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
                     <Check className="w-4 h-4 text-emerald-400" /> Proposta gerada
                   </span>
-                  <span className="text-[10px] text-slate-400">Salva em Propostas</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-200 font-semibold">{proposal.offerTitle}</span>
+                  <span className="text-slate-200 font-semibold">{proposta.oferta}</span>
                   <span className="font-mono text-white">
-                    R$ {proposal.setupValue.toLocaleString('pt-BR')}
-                    {proposal.recurringValue > 0 ? ` + R$ ${proposal.recurringValue.toLocaleString('pt-BR')}/mês` : ''}
+                    R$ {proposta.setupValue.toLocaleString('pt-BR')}
+                    {proposta.recurringValue > 0 ? ` + R$ ${proposta.recurringValue.toLocaleString('pt-BR')}/mês` : ''}
                   </span>
                 </div>
               </div>
 
-              {/* Mensagem WhatsApp */}
+              {proposta.imagens.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-cyan-400" /> Imagens da proposta ({proposta.imagens.length})
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {proposta.imagens.map((img) => (
+                      <div key={img.type} className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
+                        <img src={img.dataUri} alt={img.title} className="w-full h-auto" />
+                        <div className="p-2 flex items-center justify-between gap-2">
+                          <span className="text-[11px] text-slate-400 truncate">{img.title}</span>
+                          <button
+                            onClick={() => downloadImage(img, lead.name)}
+                            className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-slate-800 rounded transition-colors"
+                            title="Baixar imagem"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <p className="text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
                   <MessageCircle className="w-3.5 h-3.5 text-emerald-400" /> Mensagem pronta para WhatsApp
                 </p>
                 <pre className="whitespace-pre-wrap text-xs text-slate-200 bg-slate-950 border border-slate-800 rounded-xl p-3.5 leading-relaxed font-sans">
-                  {waText}
+                  {proposta.texto}
                 </pre>
               </div>
 
