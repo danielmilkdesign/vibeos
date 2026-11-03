@@ -2,17 +2,25 @@
 
 import React, { useState } from 'react';
 import { Calendar, Clock, Video, Plus, CheckCircle2, User, FileText, AlertTriangle } from 'lucide-react';
-import { getStoredData, setStoredData, INITIAL_MEETINGS } from '../../lib/crm-store';
-import { Meeting } from '../../types/crm';
+import { useCrmCollection } from '../../lib/crm-client';
+import { useAuth } from '../../lib/auth-context';
+import { Meeting, Company, Opportunity } from '../../types/crm';
+type LinkedMeeting = Omit<Meeting, 'channel'> & { channel: Meeting['channel'] | 'VIDEO' | 'A_DEFINIR'; companyId?: string; opportunityId?: string; assignedUserId?: string; diagnosticAuthorId?: string; diagnosticRecordedAt?: string };
 
 export default function AgendaPage() {
-  const [meetings, setMeetings] = useState<Meeting[]>(() =>
-    getStoredData<Meeting[]>('vibe_meetings', INITIAL_MEETINGS).map((meeting) => ({
-      ...meeting,
-      durationMinutes: 30,
-    }))
-  );
-  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const { user } = useAuth();
+  const [meetings, saveAsync, { loading, error }] = useCrmCollection<LinkedMeeting[]>('vibe_meetings', []);
+  const [companies] = useCrmCollection<Company[]>('vibe_companies', []);
+  const [opportunities] = useCrmCollection<Opportunity[]>('vibe_opps', []);
+  const [actionError, setActionError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const persist = async (next: LinkedMeeting[]) => {
+    setActionError(''); setBusy(true);
+    try { await saveAsync(next); return true; }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao salvar.'); return false; }
+    finally { setBusy(false); }
+  };
+  const [selectedMeeting, setSelectedMeeting] = useState<LinkedMeeting | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
 
@@ -25,39 +33,46 @@ export default function AgendaPage() {
 
   // Diagnostic Form State
   const [bottleneck, setBottleneck] = useState('');
-  const [recommendedOffer, setRecommendedOffer] = useState('Presença Própria (R$1.500 setup + R$99/mês)');
+  const [recommendedOffer, setRecommendedOffer] = useState('');
   const [nextStep, setNextStep] = useState('');
+  const [meetingUrl, setMeetingUrl] = useState('');
+  const [companyId, setCompanyId] = useState('');
+  const [opportunityId, setOpportunityId] = useState('');
 
-  const handleScheduleSubmit = (e: React.FormEvent) => {
+  const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!companyName) return;
+    if (!companyName.trim() || !date || !time || busy || loading || !user) return;
+    if (meetingUrl) { try { if (!['https:','http:'].includes(new URL(meetingUrl).protocol)) throw Error(); } catch { setActionError('Informe uma URL HTTP(S) válida ou deixe vazia.'); return; } }
+    if (opportunityId && !opportunities.some(o => o.id === opportunityId && o.companyId === companyId)) { setActionError('Oportunidade e empresa devem ter o mesmo vínculo.'); return; }
 
-    const newMeeting: Meeting = {
-      id: `mtg-${Date.now()}`,
+    const newMeeting: LinkedMeeting = {
+      id: crypto.randomUUID(),
+      companyId: companyId || undefined,
+      opportunityId: opportunityId || undefined,
       companyName,
-      contactName: contactName || 'Decisor a confirmar',
+      contactName,
       contactEmail: contactEmail || undefined,
-      date: date || new Date().toISOString().split('T')[0],
-      time: time || '14:30',
+      date,
+      time,
       durationMinutes: 30,
-      meetingUrl: 'https://meet.google.com/vibe-os-analise',
-      channel: 'GOOGLE_MEET',
-      assignedTo: 'Victor Belichar (Comercial)',
+      meetingUrl: meetingUrl.trim(),
+      channel: meetingUrl ? 'VIDEO' : 'A_DEFINIR',
+      assignedTo: user.name,
+      assignedUserId: user.id,
       status: 'AGENDADA'
     };
 
     const updated = [newMeeting, ...meetings];
-    setMeetings(updated);
-    setStoredData('vibe_meetings', updated);
+    if (!await persist(updated)) return;
     setIsScheduleModalOpen(false);
     setCompanyName('');
     setContactName('');
     setContactEmail('');
   };
 
-  const handleSaveDiagnosticSubmit = (e: React.FormEvent) => {
+  const handleSaveDiagnosticSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedMeeting) return;
+    if (!selectedMeeting || !bottleneck.trim() || !nextStep.trim() || busy || !user) return;
 
     const updated = meetings.map((m) =>
       m.id === selectedMeeting.id
@@ -67,18 +82,20 @@ export default function AgendaPage() {
             mainBottleneck: bottleneck,
             recommendedOffer: recommendedOffer,
             nextStep: nextStep
+            , diagnosticAuthorId: user.id, diagnosticRecordedAt: new Date().toISOString()
           }
         : m
     );
 
-    setMeetings(updated);
-    setStoredData('vibe_meetings', updated);
+    if (!await persist(updated)) return;
     setIsDiagnosticModalOpen(false);
     setSelectedMeeting(null);
   };
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {loading && <p role="status">Carregando reuniões…</p>}
+      {(error || actionError) && <p role="alert" className="text-rose-400">{String(error || actionError)}</p>}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -91,7 +108,7 @@ export default function AgendaPage() {
             Agenda de Análises & Reuniões
           </h1>
           <p className="text-slate-400 text-xs mt-1">
-            Agendamento de reuniões comerciais, links do Google Meet e formulário pós-análise.
+            Registro de reuniões e diagnóstico. Insira um link real; o sistema não cria chamadas nem convites.
           </p>
         </div>
 
@@ -150,12 +167,13 @@ export default function AgendaPage() {
                 <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 text-xs space-y-1">
                   <p className="text-[11px] text-slate-400">Canal: <span className="text-slate-200 font-semibold">{meeting.channel}</span></p>
                   <a
-                    href={meeting.meetingUrl}
+                    href={meeting.meetingUrl || undefined}
+                    aria-disabled={!meeting.meetingUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="text-[11px] text-cyan-400 hover:underline font-mono truncate block"
                   >
-                    {meeting.meetingUrl}
+                    {meeting.meetingUrl || 'Link não informado'}
                   </a>
                 </div>
 
@@ -174,6 +192,7 @@ export default function AgendaPage() {
                     setSelectedMeeting(meeting);
                     setBottleneck(meeting.mainBottleneck || '');
                     setNextStep(meeting.nextStep || '');
+                    setRecommendedOffer(meeting.recommendedOffer || '');
                     setIsDiagnosticModalOpen(true);
                   }}
                   className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
@@ -192,6 +211,16 @@ export default function AgendaPage() {
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-slate-100">Agendar Reunião de 30 Minutos</h3>
             <form onSubmit={handleScheduleSubmit} className="space-y-3">
+              {actionError && <p role="alert" className="text-rose-400">{actionError}</p>}
+              <label className="block text-xs text-slate-300">Empresa vinculada (opcional)
+                <select aria-label="Empresa vinculada" value={companyId} onChange={e => { setCompanyId(e.target.value); setOpportunityId(''); const c = companies.find(c => c.id === e.target.value); if (c) setCompanyName(c.name); }} className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Sem vínculo</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+              </label>
+              <label className="block text-xs text-slate-300">Oportunidade vinculada
+                <select aria-label="Oportunidade vinculada" value={opportunityId} onChange={e => setOpportunityId(e.target.value)} className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Sem oportunidade</option>{opportunities.filter(o => o.companyId === companyId).map(o => <option key={o.id} value={o.id}>{o.title}</option>)}</select>
+              </label>
+              <label className="block text-xs text-slate-300">Link real da reunião (opcional)
+                <input aria-label="Link real da reunião" type="url" value={meetingUrl} onChange={e => setMeetingUrl(e.target.value)} className="w-full rounded-xl bg-slate-950 border border-slate-800 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" />
+              </label>
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Empresa</label>
                 <input
@@ -276,6 +305,7 @@ export default function AgendaPage() {
           <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-slate-100">Formulário Pós-Análise ({selectedMeeting.companyName})</h3>
             <form onSubmit={handleSaveDiagnosticSubmit} className="space-y-3">
+              {actionError && <p role="alert" className="text-rose-400">{actionError}</p>}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Principal Gargalo Comercial / Digital</label>
                 <textarea
@@ -295,10 +325,11 @@ export default function AgendaPage() {
                   onChange={(e) => setRecommendedOffer(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="Presença Própria (R$1.500 setup + R$99/mês)">Presença Própria (R$ 1.500 + R$ 99/mês)</option>
-                  <option value="Esteira de Crescimento (R$2.200 setup + R$890/mês)">Esteira de Crescimento (R$ 2.200 + R$ 890/mês)</option>
-                  <option value="Plano 5 Artes (R$490/mês)">Plano 5 Artes (R$ 490/mês)</option>
-                  <option value="Plano 12 Artes (R$1.290/mês)">Plano 12 Artes (R$ 1.290/mês)</option>
+                  <option value="">Recomendação pendente</option>
+                  <option value="Site">Site (preço a confirmar)</option>
+                  <option value="Landing Page">Landing Page (preço a confirmar)</option>
+                  <option value="Automação">Automação (preço a confirmar)</option>
+                  <option value="Redes sociais">Redes sociais (preço a confirmar)</option>
                   <option value="Sistema Sob Medida">Sistema Sob Medida</option>
                   <option value="Solução para Clínicas">Solução para Clínicas</option>
                 </select>

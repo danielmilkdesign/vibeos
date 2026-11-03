@@ -13,7 +13,10 @@ import {
   ArrowUpRight,
   Plus
 } from 'lucide-react';
-import { getStoredData } from '../../lib/crm-store';
+import { useCrmCollection } from '../../lib/crm-client';
+import { Company, Contract, Project } from '../../types/crm';
+import { deriveClients } from '../../lib/operations-domain';
+import { normalizePhone } from '../../lib/lead-normalization';
 
 interface Cliente {
   id: string;
@@ -33,9 +36,12 @@ interface Cliente {
 const CLIENTES_INICIAIS: Cliente[] = [];
 
 export default function ClientesPage() {
-  const [clientes] = useState<Cliente[]>(() =>
-    getStoredData('vibe_clientes', CLIENTES_INICIAIS)
-  );
+  const [companies, , companyState] = useCrmCollection<Company[]>('vibe_companies', []);
+  const [contracts, , contractState] = useCrmCollection<Contract[]>('vibe_contracts', []);
+  const [projects, , projectState] = useCrmCollection<Project[]>('vibe_projects', []);
+  const loading = companyState.loading || contractState.loading || projectState.loading;
+  const error = companyState.error || contractState.error || projectState.error;
+  const clientes = deriveClients(companies, contracts, projects);
   const [tabFilter, setTabFilter] = useState<'TODOS' | 'ATIVO' | 'PROSPECT' | 'PAUSADO' | 'ENCERRADO'>('ATIVO');
   const [searchTerm, setSearchTerm] = useState('');
   const [saudeFilter, setSaudeFilter] = useState<string>('ALL');
@@ -56,6 +62,8 @@ export default function ClientesPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+      {loading && <p role="status">Carregando carteira…</p>}
+      {error && <p role="alert" className="text-rose-400">{String(error)}</p>}
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div>
@@ -82,7 +90,7 @@ export default function ClientesPage() {
           <span className="text-xs text-slate-400 font-medium">Clientes Ativos</span>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-semibold text-white tracking-tight">{totalAtivos}</span>
-            <span className="text-xs text-emerald-400 font-medium">100% retidos</span>
+            <span className="text-xs text-slate-400">Contratos ativos</span>
           </div>
         </div>
 
@@ -111,7 +119,7 @@ export default function ClientesPage() {
         <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
           <span className="text-xs text-slate-400 font-medium">Renovações em 60 dias</span>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold text-white tracking-tight">2</span>
+            <span className="text-2xl font-semibold text-white tracking-tight">{clientes.filter(c => c.status === 'ATIVO' && c.renovacaoEm && Date.parse(c.renovacaoEm) >= Date.now() && Date.parse(c.renovacaoEm) <= Date.now() + 60 * 86400000).length}</span>
             <span className="text-xs text-slate-400">Pré-renovação</span>
           </div>
         </div>
@@ -247,12 +255,14 @@ export default function ClientesPage() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-white/[0.04] text-xs">
                   <a
-                    href={`https://wa.me/${cliente.whatsapp}`}
+                    href={normalizePhone(cliente.whatsapp) ? `https://wa.me/${normalizePhone(cliente.whatsapp)}` : undefined}
+                    aria-disabled={!normalizePhone(cliente.whatsapp)}
+                    tabIndex={normalizePhone(cliente.whatsapp) ? 0 : -1}
                     target="_blank"
                     rel="noreferrer"
                     className="text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+                    <MessageSquare className="w-3.5 h-3.5" /> {normalizePhone(cliente.whatsapp) ? 'WhatsApp' : 'Telefone não informado'}
                   </a>
 
                   <Link

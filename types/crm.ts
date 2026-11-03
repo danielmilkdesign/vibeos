@@ -76,6 +76,8 @@ export interface Lead {
   updatedAt: string;
 }
 
+export type OpportunityStage = LeadStatus | 'QUALIFICADO' | 'ANALISE_AGENDADA' | 'ANALISE_REALIZADA' | 'NEGOCIACAO' | 'FECHADO_GANHO' | 'FECHADO_PERDIDO';
+
 export interface Opportunity {
   id: string;
   companyId?: string;
@@ -87,7 +89,10 @@ export interface Opportunity {
   recurringValue: number;
   estimatedValue: number;
   probability: number;
-  stage: LeadStatus;
+  stage: OpportunityStage;
+  leadId?: string;
+  nicho?: NichoEnum;
+  closedAt?: string;
   nextAction?: string;
   nextActionDate?: string;
   ownerName: string;

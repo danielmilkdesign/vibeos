@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '../lib/auth-context';
+import { CrmSyncProvider } from '../lib/crm-client';
 import AppLayoutWrapper from '../components/Layout/AppLayoutWrapper';
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function RootLayout({
     <html lang="pt-BR" className="dark">
       <body className="bg-[#080C14] text-slate-100 min-h-screen antialiased flex flex-col font-sans">
         <AuthProvider>
-          <AppLayoutWrapper>{children}</AppLayoutWrapper>
+          <CrmSyncProvider><AppLayoutWrapper>{children}</AppLayoutWrapper></CrmSyncProvider>
         </AuthProvider>
       </body>
     </html>

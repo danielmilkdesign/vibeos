@@ -16,57 +16,38 @@ import {
   DollarSign
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import {
-  getStoredData,
-  INITIAL_OPPORTUNITIES,
-  INITIAL_PROJECTS_FULL,
-  INITIAL_CONTRACTS,
-  INITIAL_MEETINGS,
-  INITIAL_PROPOSALS
-} from '../lib/crm-store';
-import { INITIAL_LEADS } from '../lib/crm-initial-data';
+import { useCrmCollection } from '../lib/crm-client';
+import { canonicalStage, commercialMetrics } from '../lib/commercial-domain';
 import { Lead, Opportunity, Project, Contract, Meeting, Proposal } from '../types/crm';
 
 export default function DashboardPage() {
   const { user } = useAuth();
 
-  const [leads] = useState<Lead[]>(() => getStoredData('vibe_leads', INITIAL_LEADS));
-  const [opportunities] = useState<Opportunity[]>(() => getStoredData('vibe_opps', INITIAL_OPPORTUNITIES));
-  const [projects] = useState<Project[]>(() => getStoredData('vibe_projects', INITIAL_PROJECTS_FULL));
-  const [contracts] = useState<Contract[]>(() => getStoredData('vibe_contracts', INITIAL_CONTRACTS));
-  const [meetings] = useState<Meeting[]>(() => getStoredData('vibe_meetings', INITIAL_MEETINGS));
-  const [proposals] = useState<Proposal[]>(() => getStoredData('vibe_proposals', INITIAL_PROPOSALS));
-
-  // Core business calculations
-  const pipelineTotal = opportunities.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
-  const activeContracts = contracts.filter((c) => c.status === 'ATIVO');
-  const mrrTotal = activeContracts.reduce((acc, c) => acc + (c.recurringValue || 0), 0);
-  const delayedFollowupsCount = opportunities.filter(
-    (o) => o.stage === 'ABORDADO_WHATSAPP' || o.stage === 'REUNIAO_AGENDADA'
-  ).length;
-  const riskyProjectsCount = projects.filter((p) => p.riskLevel === 'CRITICO' || p.riskLevel === 'ATENCAO').length;
+  const [leads] = useCrmCollection<Lead[]>('vibe_leads', []);
+  const [opportunities] = useCrmCollection<Opportunity[]>('vibe_opps', []);
+  const [projects] = useCrmCollection<Project[]>('vibe_projects', []);
+  const [contracts] = useCrmCollection<Contract[]>('vibe_contracts', []);
+  const [meetings] = useCrmCollection<Meeting[]>('vibe_meetings', []);
+  const [proposals] = useCrmCollection<Proposal[]>('vibe_proposals', []);
+  const metrics = commercialMetrics(opportunities, contracts);
+  const pipelineTotal = metrics.openValue;
+  const activeContracts = contracts.filter(c => ['ATIVO','RENOVACAO_PROXIMA'].includes(c.status));
+  const mrrTotal = metrics.mrr;
+  const delayedFollowupsCount = opportunities.filter(o => o.nextActionDate && Date.parse(o.nextActionDate) < Date.now() && !['FECHADO_GANHO','FECHADO_PERDIDO'].includes(canonicalStage(o.stage))).length;
+  const riskyProjectsCount = projects.filter(p => p.status !== 'CONCLUIDO' && ['CRITICO','ATENCAO'].includes(p.riskLevel)).length;
   const urgentCount = delayedFollowupsCount + riskyProjectsCount;
-
-  // Stages
-  const stageNovo = opportunities.filter((o) => o.stage === 'LEAD_NOVO');
-  const stageQualificado = opportunities.filter((o) => o.stage === 'DIAGNOSTICO_GERADO' || o.stage === 'ABORDADO_WHATSAPP');
-  const stageAnalise = opportunities.filter((o) => o.stage === 'REUNIAO_AGENDADA');
-  const stageProposta = opportunities.filter((o) => o.stage === 'PROPOSTA_ENVIADA');
-  const stageNegociacao = opportunities.filter((o) => o.stage === 'FECHADO');
-
-  const stageNovoTotal = stageNovo.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
-  const stageQualificadoTotal = stageQualificado.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
-  const stageAnaliseTotal = stageAnalise.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
-  const stagePropostaTotal = stageProposta.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
-  const stageNegociacaoTotal = stageNegociacao.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
-
+  const stageNovo = opportunities.filter(o => canonicalStage(o.stage) === 'QUALIFICADO');
+  const stageQualificado = opportunities.filter(o => canonicalStage(o.stage) === 'ANALISE_REALIZADA');
+  const stageAnalise = opportunities.filter(o => canonicalStage(o.stage) === 'ANALISE_AGENDADA');
+  const stageProposta = opportunities.filter(o => canonicalStage(o.stage) === 'PROPOSTA_ENVIADA');
+  const stageNegociacao = opportunities.filter(o => canonicalStage(o.stage) === 'NEGOCIACAO');
   const stagesList = [
-    { label: 'Novo Lead', count: stageNovo.length, total: stageNovoTotal, pct: pipelineTotal > 0 ? (stageNovoTotal / pipelineTotal) * 100 : 0 },
-    { label: 'Qualificado', count: stageQualificado.length, total: stageQualificadoTotal, pct: pipelineTotal > 0 ? (stageQualificadoTotal / pipelineTotal) * 100 : 0 },
-    { label: 'Análise Agendada', count: stageAnalise.length, total: stageAnaliseTotal, pct: pipelineTotal > 0 ? (stageAnaliseTotal / pipelineTotal) * 100 : 0 },
-    { label: 'Proposta Enviada', count: stageProposta.length, total: stagePropostaTotal, pct: pipelineTotal > 0 ? (stagePropostaTotal / pipelineTotal) * 100 : 0 },
-    { label: 'Em Fechamento', count: stageNegociacao.length, total: stageNegociacaoTotal, pct: pipelineTotal > 0 ? (stageNegociacaoTotal / pipelineTotal) * 100 : 0 },
-  ];
+    ['Qualificado',stageNovo],['Diagnóstico realizado',stageQualificado],['Análise agendada',stageAnalise],['Proposta enviada',stageProposta],['Em negociação',stageNegociacao]
+  ].map(([label,records])=>{
+    const items = records as Opportunity[];
+    const total = items.reduce((sum,o)=>sum+(o.estimatedValue || 0),0);
+    return {label:label as string,count:items.length,total,pct:pipelineTotal>0 ? total/pipelineTotal*100 : 0};
+  });
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Daniel';
 

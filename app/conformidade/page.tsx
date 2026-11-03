@@ -2,54 +2,76 @@
 
 import React, { useState } from 'react';
 import { ShieldCheck, Plus } from 'lucide-react';
-import { getStoredData, setStoredData, INITIAL_COMPLIANCE } from '../../lib/crm-store';
+import { useCrmCollection } from '../../lib/crm-client';
+import { useAuth } from '../../lib/auth-context';
 import { ComplianceCheck, NichoEnum } from '../../types/crm';
 
+type AuditCheck = ComplianceCheck & { reviewerId?: string; evidence?: { field: string; approved: boolean; text: string; reviewerId: string; reviewedAt: string }[] };
+
 export default function ConformidadePage() {
-  const [items, setItems] = useState<ComplianceCheck[]>(() => getStoredData('vibe_compliance', INITIAL_COMPLIANCE));
+  const { user } = useAuth();
+  const [items, saveAsync, { loading, error }] = useCrmCollection<AuditCheck[]>('vibe_compliance', []);
+  const [actionError, setActionError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const persist = async (next: AuditCheck[]) => {
+    setActionError(''); setBusy(true);
+    try { await saveAsync(next); return true; }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao salvar.'); return false; }
+    finally { setBusy(false); }
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
   const [projectName, setProjectName] = useState('');
   const [nicho, setNicho] = useState<NichoEnum>('ODONTOLOGIA');
   const [notes, setNotes] = useState('');
+  const [evidence, setEvidence] = useState<Record<string, string>>({});
 
-  const handleToggleCheck = (id: string, field: keyof ComplianceCheck) => {
+  const handleToggleCheck = async (id: string, field: 'identityVerified' | 'socialProofReviewed' | 'claimsVerified' | 'sensitiveDataProtected' | 'internalApproved') => {
+    if (busy || !user) return;
+    const current = items.find(item => item.id === id);
+    if (!current) return;
+    const text = evidence[id]?.trim() || '';
+    if (!current[field] && !text) { setActionError('Registre a evidência consultada antes de aprovar.'); return; }
+    if (field === 'internalApproved' && !current.internalApproved && ![current.identityVerified,current.socialProofReviewed,current.claimsVerified,current.sensitiveDataProtected].every(Boolean)) { setActionError('Verifique todos os itens antes da aprovação interna.'); return; }
+    const reviewedAt = new Date().toISOString();
     const updated = items.map((item) => {
       if (item.id === id) {
-        return { ...item, [field]: !item[field] };
+        return { ...item, [field]: !item[field], internalApproved: field === 'internalApproved' ? !item.internalApproved : false,
+          reviewerName: user.name, reviewerId: user.id, reviewedAt,
+          evidence: [...(item.evidence || []), { field, approved: !item[field], text: text || 'Verificação revogada', reviewerId: user.id, reviewedAt }] };
       }
       return item;
     });
-    setItems(updated);
-    setStoredData('vibe_compliance', updated);
+    await persist(updated);
   };
 
-  const handleCreateCompliance = (e: React.FormEvent) => {
+  const handleCreateCompliance = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!projectName) return;
+    if (!projectName.trim() || busy || loading) return;
 
     const newItem: ComplianceCheck = {
-      id: `cmp-${Date.now()}`,
+      id: crypto.randomUUID(),
       projectName,
       nicho,
-      identityVerified: true,
+      identityVerified: false,
       socialProofReviewed: false,
       claimsVerified: false,
-      sensitiveDataProtected: true,
+      sensitiveDataProtected: false,
       internalApproved: false,
       notes: notes || 'Auditoria de normas iniciada.'
     };
 
     const updated = [newItem, ...items];
-    setItems(updated);
-    setStoredData('vibe_compliance', updated);
+    if (!await persist(updated)) return;
     setIsModalOpen(false);
     setProjectName('');
   };
 
   return (
     <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+      {loading && <p role="status">Carregando auditorias…</p>}
+      {(error || actionError) && <p role="alert" className="text-rose-400">{String(error || actionError)}</p>}
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div>
@@ -121,6 +143,11 @@ export default function ConformidadePage() {
                   </span>
                 </div>
 
+                <label className="block text-xs text-slate-300">Evidência para a próxima verificação
+                  <input aria-label={`Evidência de ${item.projectName}`} value={evidence[item.id] || ''} onChange={e => setEvidence({...evidence, [item.id]: e.target.value})} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" />
+                </label>
+                {item.reviewerName && <p className="text-xs text-slate-400">Última verificação: {item.reviewerName} • {item.reviewedAt}</p>}
+                {(item.evidence || []).map((entry, index) => <p key={index} className="text-xs text-slate-400">{entry.field}: {entry.approved ? 'Verificado' : 'Revogado'} — {entry.text} ({entry.reviewedAt})</p>)}
                 {/* Checklist Items */}
                 <div className="space-y-1.5 p-3 rounded-lg bg-white/[0.015] border border-white/[0.04] text-xs">
                   <label className="flex items-center justify-between cursor-pointer p-1.5 hover:bg-white/[0.02] rounded transition-colors">

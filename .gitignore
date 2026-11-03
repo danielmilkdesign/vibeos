@@ -5,3 +5,12 @@ node_modules/
 *.log
 *.tsbuildinfo
 .cursor/
+
+.vercel
+.env*
+!.env.example
+
+# artefatos locais (nao versionar)
+nul
+.hermes-tmp*
+.vibe/

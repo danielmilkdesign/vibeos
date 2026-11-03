@@ -27,8 +27,18 @@ import {
   FileSpreadsheet,
   FileCode,
   FileText,
-  Table
+  Table,
+  Upload
 } from "lucide-react";
+
+import { normalizePhone } from '../../lib/lead-normalization';
+import { csvCell, clipboardCell } from '../../lib/lead-export';
+import { analyzeLead } from '../../lib/lead-analysis';
+import { saveProspects } from '../../lib/prospect-client';
+import { refreshCrm, getStoredData, setStoredData } from '../../lib/crm-store';
+import { prepareProspectProposals, type PreparedProspect } from '../../lib/prospect-proposals';
+import { type ProposalDocument, proposalPending } from '../../lib/proposal-domain';
+import ProposalAssets from '../../components/CRM/ProposalAssets';
 
 interface Lead {
   id: string;
@@ -64,8 +74,18 @@ export default function ProspeccaoPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mainExportOpen, setMainExportOpen] = useState(false);
   const [bulkExportOpen, setBulkExportOpen] = useState(false);
+  const [uploadedLeads, setUploadedLeads] = useState<Lead[]>([]);
+  const [importedIds, setImportedIds] = useState<string[]>([]);
+  const [fileUploading, setFileUploading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [analyses, setAnalyses] = useState<Record<string, ReturnType<typeof analyzeLead>>>({});
+  const [prepared, setPrepared] = useState<PreparedProspect[]>([]);
+  const [preparing, setPreparing] = useState(false);
+  const [prepareProgress, setPrepareProgress] = useState({ done: 0, total: 0 });
   const mainExportRef = useRef<HTMLDivElement>(null);
   const bulkExportRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadedRef = useRef<Lead[]>([]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -109,11 +129,14 @@ export default function ProspeccaoPage() {
       }
 
       if (data.leads) {
-        setLeads(data.leads);
+        // Preserve unsaved imported contacts across a new search.
+        setLeads(Array.from(new Map([...uploadedRef.current, ...data.leads].map(l => [l.id, l] as const)).values()));
         if (data.leads.length === 0) {
-          setErrorMsg("Nenhum resultado encontrado para essa busca. Tente alterar o nicho ou a cidade.");
+          setErrorMsg(uploadedRef.current.length
+            ? "Nenhum resultado novo nesta busca. Contatos importados foram preservados."
+            : "Nenhum resultado encontrado para essa busca. Tente alterar o nicho ou a cidade.");
         } else {
-          showToast(`✓ ${data.leads.length} leads qualificados encontrados com sucesso!`);
+          showToast(`${data.leads.length} contatos encontrados; qualificação pendente`);
         }
       }
     } catch (err: any) {
@@ -234,10 +257,7 @@ export default function ProspeccaoPage() {
     if (format === "csv_br") {
       const header = "Nome da Empresa;Categoria;Telefone;Website;Avaliação;Qtde Avaliações;Endereço\n";
       const rows = targetLeads
-        .map(
-          (l) =>
-            `"${(l.name || "").replace(/"/g, '""')}";"${(l.category || "").replace(/"/g, '""')}";"${l.phone || ""}";"${l.website || ""}";"${l.rating || ""}";"${l.ratingCount || ""}";"${(l.address || "").replace(/"/g, '""')}"`
-        )
+        .map((l) => [l.name, l.category, l.phone, l.website, l.rating, l.ratingCount, l.address].map(csvCell).join(";"))
         .join("\n");
       downloadFile(
         "\uFEFF" + header + rows,
@@ -248,10 +268,7 @@ export default function ProspeccaoPage() {
     } else if (format === "csv_intl") {
       const header = "Company Name,Category,Phone,Website,Rating,Reviews Count,Address\n";
       const rows = targetLeads
-        .map(
-          (l) =>
-            `"${(l.name || "").replace(/"/g, '""')}","${(l.category || "").replace(/"/g, '""')}","${l.phone || ""}","${l.website || ""}","${l.rating || ""}","${l.ratingCount || ""}","${(l.address || "").replace(/"/g, '""')}"`
-        )
+        .map((l) => [l.name, l.category, l.phone, l.website, l.rating, l.ratingCount, l.address].map(csvCell).join(","))
         .join("\n");
       downloadFile(
         "\uFEFF" + header + rows,
@@ -346,10 +363,10 @@ export default function ProspeccaoPage() {
       txt += `====================================================================\n\n`;
 
       targetLeads.forEach((l, i) => {
-        const clean = l.phone ? l.phone.replace(/\D/g, "") : null;
+        const clean = normalizePhone(l.phone);
         txt += `[${i + 1}] ${l.name.toUpperCase()}\n`;
         txt += `    • Telefone: ${l.phone || "Sem telefone cadastrado"}\n`;
-        txt += `    • WhatsApp Link: ${clean ? `https://wa.me/55${clean}` : "N/A"}\n`;
+        txt += `    • WhatsApp Link: ${clean ? `https://wa.me/${clean}` : "N/A"}\n`;
         txt += `    • Website: ${l.website || "Sem website indexado (Oportunidade)"}\n`;
         txt += `    • Categoria: ${l.category}\n`;
         if (l.rating) txt += `    • Avaliação: ${l.rating} ⭐ (${l.ratingCount || 0} avaliações)\n`;
@@ -375,10 +392,7 @@ export default function ProspeccaoPage() {
     } else if (format === "clipboard") {
       const header = "Nome\tCategoria\tTelefone\tWebsite\tAvaliação\tTotal Avaliações\tEndereço\n";
       const rows = targetLeads
-        .map(
-          (l) =>
-            `${(l.name || "").replace(/[\t\n\r]/g, " ")}\t${(l.category || "").replace(/[\t\n\r]/g, " ")}\t${(l.phone || "").replace(/[\t\n\r]/g, " ")}\t${(l.website || "").replace(/[\t\n\r]/g, " ")}\t${l.rating || ""}\t${l.ratingCount || ""}\t${(l.address || "").replace(/[\t\n\r]/g, " ")}`
-        )
+        .map((l) => [l.name, l.category, l.phone, l.website, l.rating, l.ratingCount, l.address].map(clipboardCell).join("\t"))
         .join("\n");
       navigator.clipboard.writeText(header + rows);
       showToast(`✓ ${targetLeads.length} leads copiados como tabela! Cole no Excel ou Sheets (Ctrl+V).`);
@@ -452,71 +466,123 @@ export default function ProspeccaoPage() {
     showToast("Telefone copiado para a área de transferência!");
   }
 
-  // Salvar Lead individual no CRM
+  // Confirma lead e oportunidade persistidos antes de marcar No CRM.
   async function handleSaveToCRM(lead: Lead) {
     setSavingId(lead.id);
     try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nomeEmpresa: lead.name,
-          nicho: lead.category || "OUTBOUND",
-          localizacao: lead.address || location,
-          phoneWhatsapp: lead.phone,
-          diagnosticoSeo: lead.website
-            ? `Site existente: ${lead.website}`
-            : "Sem website indexado (Alta oportunidade de fechamento)",
-          valorEstimado: 2500,
-        }),
-      });
-
-      if (res.ok) {
-        setSavedIds((prev) => [...prev, lead.id]);
-        showToast(`✓ "${lead.name}" importado para o Pipeline do CRM!`);
-      } else {
-        showToast("Erro ao importar lead no CRM.");
-      }
-    } catch {
-      showToast("Erro de conexão ao salvar lead.");
-    } finally {
-      setSavingId(null);
-    }
+      const result = await saveProspects([{...lead,analysis:analyzeLead({...lead,nomeEmpresa:lead.name,phoneWhatsapp:lead.phone,localizacao:lead.address || location})}]);
+      if (result.failures.length) throw new Error(result.failures[0].message);
+      setSavedIds(prev => Array.from(new Set([...prev,...result.savedIds])));
+      await refreshCrm();
+      showToast(`✓ "${lead.name}" salvo no CRM e disponível no Pipeline.`);
+    } catch(error) { setErrorMsg(error instanceof Error ? error.message : 'Falha ao salvar contato.'); }
+    finally {setSavingId(null);}
   }
 
-  // Salvar múltiplos leads no CRM
   async function handleBulkSaveToCRM() {
-    const toSave = leads.filter((l) => selectedIds.includes(l.id) && !savedIds.includes(l.id));
+    const toSave = leads.filter(l => selectedIds.includes(l.id) && !savedIds.includes(l.id));
     if (!toSave.length) return;
+    setSavingId('BULK');
+    try {
+      const result = await saveProspects(toSave.map(lead => ({...lead,analysis:analyzeLead({...lead,nomeEmpresa:lead.name,phoneWhatsapp:lead.phone,localizacao:lead.address || location})})));
+      setSavedIds(prev => Array.from(new Set([...prev,...result.savedIds])));
+      if (result.savedIds.length) await refreshCrm();
+      showToast(`${result.savedIds.length} contatos gravados; ${result.failures.length} falhas disponíveis para nova tentativa.`);
+      if(result.failures.length) setErrorMsg(result.failures.map(f => f.message).join(' · '));
+    } catch(error) {setErrorMsg(error instanceof Error ? error.message : 'Não foi possível atualizar o CRM.');}
+    finally {setSavingId(null);}
+  }
 
-    setSavingId("BULK");
-    let count = 0;
+  async function handlePrepareProposals() {
+    if (preparing || savingId) return;
+    const selected = leads.filter(lead => selectedIds.includes(lead.id));
+    if (!selected.length) return;
+    setPreparing(true);
+    setErrorMsg(null);
+    setPrepared([]);
+    setPrepareProgress({ done: 0, total: selected.length });
+    const input = selected.map(lead => ({ ...lead, analysis: analyzeLead({ ...lead, nomeEmpresa: lead.name, phoneWhatsapp: lead.phone }) }));
+    setAnalyses(Object.fromEntries(input.map(lead => [lead.id, lead.analysis])));
+    try {
+      const result = await prepareProspectProposals(input, {
+        save: saveProspects,
+        read: async () => { await refreshCrm(); return getStoredData<ProposalDocument[]>('vibe_proposals', []); },
+        write: async proposals => { await setStoredData('vibe_proposals', proposals); },
+      }, (done, total) => setPrepareProgress({ done, total }));
+      setSavedIds(prev => Array.from(new Set([...prev, ...result.savedIds])));
+      setPrepared(result.prepared);
+      if (result.failures.length) setErrorMsg(result.failures.map(failure => failure.message).join(' · '));
+      showToast(`${result.prepared.length} contatos preparados; ${result.createdCount} novos rascunhos salvos; ${result.failures.length} falhas. Revise preços e termos em Propostas.`);
+    } catch (error) { setErrorMsg(error instanceof Error ? error.message : 'Falha ao preparar propostas.'); }
+    finally { setPreparing(false); }
+  }
 
-    for (const lead of toSave) {
-      try {
-        await fetch("/api/leads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nomeEmpresa: lead.name,
-            nicho: lead.category || "OUTBOUND",
-            localizacao: lead.address || location,
-            phoneWhatsapp: lead.phone,
-            diagnosticoSeo: lead.website
-              ? `Site existente: ${lead.website}`
-              : "Sem website indexado (Alta oportunidade de fechamento)",
-            valorEstimado: 2500,
-          }),
-        });
-        count++;
-      } catch (err) {
-        console.error("Erro ao salvar lote:", err);
-      }
+  // Importar leads de arquivo (CSV / Excel / JSON)
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    await processLeadFile(event.target.files?.[0]);
+  }
+
+  async function processLeadFile(file?: File) {
+    if (!file) return;
+
+    if (!file.type && !['.csv', '.xls', '.xlsx', '.json'].some(ext => file.name.toLowerCase().endsWith(ext))) {
+      setFileError('Formato não reconhecido. Use CSV, Excel (.xls/.xlsx) ou JSON.');
+      return;
     }
 
-    setSavedIds((prev) => [...prev, ...toSave.map((l) => l.id)]);
-    setSavingId(null);
-    showToast(`✓ ${count} leads importados para o Pipeline com sucesso!`);
+    setFileUploading(true);
+    setFileError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/leads/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao importar arquivo.');
+      }
+
+      if (data.leads && data.leads.length > 0) {
+        // Map the imported leads to the expected Lead interface format
+        const mappedLeads = data.leads.map((l: any, i: number) => ({
+          id: l.externalId || l.id || `lead-file-${Date.now()}-${i}`,
+          name: l.nome || l.name || '',
+          phone: l.phone || null,
+          address: l.endereco || l.address || null,
+          website: l.website || l.site || l.link || null,
+          category: l.categoria || l.nicho || l.category || 'OUTBOUND',
+          rating: l.rating ? parseFloat(l.rating) || null : null,
+          ratingCount: l.ratingCount ?? l.rating_count ?? null,
+          status: l.status || 'Novo',
+        }));
+
+        // Add to main leads list so they appear in the table, deduping by stable id.
+        const deduped = Array.from(new Map([...mappedLeads, ...uploadedRef.current].map(l => [l.id, l] as const)).values());
+        uploadedRef.current = deduped;
+        setLeads((prev) => Array.from(new Map([...deduped, ...prev].map(l => [l.id, l] as const)).values()));
+        setUploadedLeads(mappedLeads);
+        setImportedIds(deduped.map(l => l.id));
+        showToast(`${data.count} contatos na prévia. Selecione e salve no CRM para persistir.${data.skipped ? ` ${data.skipped} linhas ignoradas.` : ''}`);
+      } else {
+        setFileError('Nenhum lead encontrado no arquivo.');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      setFileError(err instanceof Error ? err.message : 'Erro ao processar o arquivo.');
+    } finally {
+      setFileUploading(false);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }
 
   // Toggle seleção de leads
@@ -666,7 +732,7 @@ export default function ProspeccaoPage() {
           </div>
         </form>
 
-        {/* Sugestões Rápidas (Chips / Pills) */}
+        {/* SUGESTÕES RÁPIDAS (Chips / Pills) */}
         <div className="pt-1 flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-cyan-400" />
@@ -686,6 +752,93 @@ export default function ProspeccaoPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4" aria-label="Análise comercial dos contatos">
+        <h2 className="text-lg font-semibold text-white">Análise e próximos passos</h2>
+        <p className="text-sm text-slate-400">A análise usa os dados coletados, sem inventar métricas de SEO, tráfego ou retorno. Recomendações são hipóteses para validar com o cliente.</p>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" disabled={!selectedIds.length || preparing || !!savingId} onClick={handlePrepareProposals} className="px-4 py-2 rounded-lg bg-cyan-500 text-slate-950 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-300">{preparing ? `Preparando ${prepareProgress.done}/${prepareProgress.total}…` : `Preparar propostas (${selectedIds.length})`}</button>
+          <a href="/pipeline" className="px-4 py-2 rounded-lg border border-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-cyan-300">Abrir Pipeline</a>
+          <a href="/propostas" className="px-4 py-2 rounded-lg border border-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-cyan-300">Revisar propostas e preparar WhatsApp</a>
+        </div>
+        <p className="text-xs text-slate-400">Preparar salva os contatos no CRM e cria rascunhos com conceitos visuais. Não acessa redes sociais nem comprova a identidade da marca ou a existência de automação. Nenhuma mensagem é enviada.</p>
+        {preparing && <p role="status" className="text-sm text-cyan-300">Processando {prepareProgress.done} de {prepareProgress.total} contatos. Mantenha esta página aberta.</p>}
+        {Object.entries(analyses).map(([id,analysis])=><details key={id} className="rounded-lg border border-slate-800 p-3"><summary className="text-slate-100 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-300">{leads.find(lead=>lead.id===id)?.name || 'Contato'} — fatos, hipóteses e recomendações</summary><pre className="whitespace-pre-wrap break-words text-xs text-slate-300 mt-3">{JSON.stringify(analysis,null,2)}</pre></details>)}
+        {prepared.map(item => <details key={item.lead.id} className="border border-slate-700 rounded-xl p-4 space-y-3">
+          <summary className="cursor-pointer text-slate-100 font-medium">{item.lead.nomeEmpresa} — {item.proposals.length} propostas no CRM</summary>
+          <a className="inline-block text-cyan-300 underline" href={`/propostas?leadId=${encodeURIComponent(item.lead.id)}&opportunityId=${encodeURIComponent(item.opportunityId)}`}>Revisar textos, termos e imagens deste contato</a>
+          {item.proposals.map(proposal => <div key={proposal.id} className="border-t border-slate-800 pt-4 space-y-3"><h3 className="text-slate-100">{proposal.offerTitle}</h3><ProposalAssets proposal={proposal} canExport={!!proposal.internalApprovedAt && proposalPending(proposal).length === 0}/></div>)}
+        </details>)}
+      </section>
+
+      {/* UPLOAD DE ARQUIVOS DE LEADS (CSV / EXCEL / JSON) */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-sm space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Upload className="w-5 h-5 text-cyan-400" />
+          <h3 className="text-sm font-bold text-slate-100">Importar Lista de Leads</h3>
+          <span className="text-[10px] font-mono text-slate-400 ml-auto">CSV • Excel • JSON</span>
+        </div>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Envie um arquivo CSV (sendo que o uso de alta qualidade em formatos brasileiros) ou
+          Excel exportado pelo motor Prospecteezy. O sistema permite a importação contínua de
+          leads organizados em colunas com os seguintes cabeçalhos:
+          <strong>Nome, Telefone, Website, Categoria, Avaliação, Endereço</strong>.
+          Os dados serão listados na prévia abaixo. O salvamento no CRM é uma etapa separada.
+        </p>
+
+        <label onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault(); if(!fileUploading) void processLeadFile(event.dataTransfer.files[0]);}} className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer hover:border-cyan-500/60 transition-all group bg-slate-950/40">
+          <div className="flex flex-col items-center justify-center pt-5 pb-4">
+            <Upload className="w-7 h-7 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+            <p className="mt-2 text-xs text-slate-300 font-medium">
+              Clique para selecionar ou arraste o arquivo
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Arquivos suportados: <code className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded">.csv</code>, <code className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded">.xlsx</code>, <code className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded">.json</code>
+            </p>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            id="leadUpload"
+            aria-label="Selecionar lista de contatos para pré-visualização"
+            disabled={fileUploading}
+            className="sr-only"
+            accept=".csv,.xls,.xlsx,.json"
+            onChange={handleFileUpload}
+          />
+        </label>
+
+        {fileError && (
+          <div className="mt-2 p-2.5 rounded-xl bg-rose-950/40 border border-rose-800/50 text-rose-300 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{fileError}</span>
+          </div>
+        )}
+
+        {uploadedLeads.length > 0 && (
+          <div className="mt-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-cyan-400 font-mono">Importados: {uploadedLeads.length} leads</span>
+              <button
+                onClick={() => { setUploadedLeads([]); setImportedIds([]); setFileError(null); }}
+                className="text-slate-500 hover:text-slate-300 text-[10px] underline underline-offset-2"
+              >
+                Limpar
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {uploadedLeads.slice(0, 8).map((l, i) => (
+                <span key={i} className="text-[10px] bg-slate-950/80 text-slate-400 px-2 py-0.5 rounded border border-slate-800">
+                  {l.name || 'sem-nome'}
+                </span>
+              ))}
+              {uploadedLeads.length > 8 && (
+                <span className="text-[10px] text-slate-500">+{uploadedLeads.length - 8} mais</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mensagem de Erro se houver */}
@@ -798,7 +951,7 @@ export default function ProspeccaoPage() {
                 </div>
                 <button
                   onClick={handleBulkSaveToCRM}
-                  disabled={savingId === "BULK"}
+                  disabled={!!savingId || preparing}
                   className="px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
                 >
                   {savingId === "BULK" ? (
@@ -840,7 +993,7 @@ export default function ProspeccaoPage() {
                   {filteredLeads.map((lead) => {
                     const isSelected = selectedIds.includes(lead.id);
                     const isSaved = savedIds.includes(lead.id);
-                    const cleanPhone = lead.phone ? lead.phone.replace(/\D/g, "") : null;
+                    const cleanPhone = normalizePhone(lead.phone);
 
                     return (
                       <tr
@@ -901,7 +1054,7 @@ export default function ProspeccaoPage() {
                               </button>
                               {cleanPhone && (
                                 <a
-                                  href={`https://wa.me/55${cleanPhone}`}
+                                  href={`https://wa.me/${cleanPhone}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="p-1 text-emerald-400 hover:text-emerald-300 rounded hover:bg-emerald-950/60 transition"
@@ -958,7 +1111,7 @@ export default function ProspeccaoPage() {
                         <td className="p-3.5 text-right">
                           <button
                             onClick={() => handleSaveToCRM(lead)}
-                            disabled={isSaved || savingId === lead.id}
+                            disabled={isSaved || !!savingId || preparing}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all ${
                               isSaved
                                 ? "bg-emerald-950/80 border border-emerald-800 text-emerald-400 cursor-default"
@@ -993,7 +1146,7 @@ export default function ProspeccaoPage() {
             {filteredLeads.map((lead) => {
               const isSelected = selectedIds.includes(lead.id);
               const isSaved = savedIds.includes(lead.id);
-              const cleanPhone = lead.phone ? lead.phone.replace(/\D/g, "") : null;
+              const cleanPhone = normalizePhone(lead.phone);
 
               return (
                 <div
@@ -1040,7 +1193,7 @@ export default function ProspeccaoPage() {
                       <div className="flex items-center gap-1.5">
                         {cleanPhone ? (
                           <a
-                            href={`https://wa.me/55${cleanPhone}`}
+                            href={`https://wa.me/${cleanPhone}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-1 rounded-lg"
@@ -1078,7 +1231,7 @@ export default function ProspeccaoPage() {
                   {/* Ação Salvar */}
                   <button
                     onClick={() => handleSaveToCRM(lead)}
-                    disabled={isSaved || savingId === lead.id}
+                    disabled={isSaved || !!savingId || preparing}
                     className={`w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                       isSaved
                         ? "bg-emerald-950/80 border border-emerald-800 text-emerald-400"

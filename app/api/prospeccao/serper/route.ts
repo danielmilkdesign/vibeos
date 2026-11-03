@@ -1,202 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireSession } from '../../../../lib/server-auth';
+import { normalizeNicho, normalizePhone } from '../../../../lib/lead-normalization';
+import { analyzeLead } from '../../../../lib/lead-analysis';
 
-interface SerperPlace {
-  position?: number;
-  title: string;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
-  rating?: number;
-  ratingCount?: number;
-  category?: string;
-  type?: string;
-  phoneNumber?: string;
-  website?: string;
-  cid?: string;
-  placeId?: string;
-}
-
-function detectNicho(category?: string, query?: string): string {
-  const text = `${category || ''} ${query || ''}`.toLowerCase();
-  if (text.includes('estétic') || text.includes('estetic') || text.includes('beleza') || text.includes('spa') || text.includes('dermatolog')) {
-    return 'ESTETICA';
-  }
-  if (text.includes('odont') || text.includes('dentist') || text.includes('ortodont')) {
-    return 'ODONTOLOGIA';
-  }
-  if (text.includes('personal') || text.includes('fitness') || text.includes('academi') || text.includes('treino') || text.includes('crossfit')) {
-    return 'PERSONAL_TRAINER';
-  }
-  if (text.includes('medic') || text.includes('médic') || text.includes('clínica') || text.includes('clinica') || text.includes('saúde') || text.includes('saude') || text.includes('hospital')) {
-    return 'MEDICINA';
-  }
-  if (text.includes('advoc') || text.includes('jurídic') || text.includes('juridic') || text.includes('direito') || text.includes('oab')) {
-    return 'ADVOCACIA';
-  }
-  return 'OUTROS';
-}
-
-function evaluateDigitalPresence(website?: string, rating?: number, ratingCount?: number) {
-  if (!website || website.trim() === '') {
-    return {
-      hasSite: false,
-      isSocialOnly: true,
-      diagnostico: 'Sem site móvel próprio indexado. Dependência total do perfil Google/redes sociais.',
-      authorityScore: Math.floor(Math.random() * 15) + 8,
-      percentSocial: 100,
-      urgencia: 'CRITICA' as const,
-      potencialFechamento: 2900
-    };
-  }
-
-  const cleanUrl = website.toLowerCase();
-  const isSocialPlatform =
-    cleanUrl.includes('instagram.com') ||
-    cleanUrl.includes('facebook.com') ||
-    cleanUrl.includes('linktr.ee') ||
-    cleanUrl.includes('linkbio') ||
-    cleanUrl.includes('wa.me') ||
-    cleanUrl.includes('whatsapp.com');
-
-  if (isSocialPlatform) {
-    return {
-      hasSite: false,
-      isSocialOnly: true,
-      diagnostico: 'Link de bio apontando para agregador/rede social. Perda de 70% de conversões no tráfego frio.',
-      authorityScore: Math.floor(Math.random() * 20) + 15,
-      percentSocial: 90,
-      urgencia: 'CRITICA' as const,
-      potencialFechamento: 2600
-    };
-  }
-
-  return {
-    hasSite: true,
-    isSocialOnly: false,
-    diagnostico: 'Possui domínio próprio registrado. Oportunidade para modernização de infraestrutura e SLA de velocidade.',
-    authorityScore: Math.floor(Math.random() * 25) + 35,
-    percentSocial: 45,
-    urgencia: 'ALTA' as const,
-    potencialFechamento: 3400
-  };
-}
+const json = (data: unknown, status = 200) => NextResponse.json(data, {status, headers: {'Cache-Control': 'no-store'}});
+const str = (value: unknown): string | null => typeof value === 'string' && value.trim() ? value.trim() : null;
+const metric = (value: unknown, max: number, integer = false): number | null => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= max && (!integer || Number.isInteger(value)) ? value : null;
 
 export async function POST(request: NextRequest) {
+  const session = await requireSession(request);
+  if (session instanceof Response) return session;
   try {
-    const body = await request.json().catch(() => ({}));
-    const {
-      query,
-      location = 'Manaus, AM',
-      page = 1,
-      num = 20,
-      apiKey: clientApiKey,
-      gl = 'br',
-      hl = 'pt-br'
-    } = body;
-
-    if (!query || typeof query !== 'string' || query.trim() === '') {
-      return NextResponse.json(
-        { success: false, error: 'O termo de busca (query) é obrigatório. Ex: "Clínicas de Estética em Manaus".' },
-        { status: 400 }
-      );
-    }
-
-    const effectiveApiKey =
-      (clientApiKey && clientApiKey.trim()) ||
-      process.env.SERPER_API_KEY ||
-      process.env.NEXT_PUBLIC_SERPER_API_KEY;
-
-    if (!effectiveApiKey) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Chave Serper.dev não configurada. Insira sua chave no painel do Prospecteezy ou configure SERPER_API_KEY no ambiente.',
-          requiresApiKey: true
-        },
-        { status: 401 }
-      );
-    }
-
-    // Call Serper Places endpoint
-    const serperResponse = await fetch('https://google.serper.dev/places', {
-      method: 'POST',
-      headers: {
-        'X-API-KEY': effectiveApiKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        q: query,
-        gl,
-        hl,
-        page: Number(page) || 1,
-        num: Math.min(Number(num) || 20, 100),
-        ...(location ? { location } : {})
-      }),
-      signal: AbortSignal.timeout(18000)
+    const body = await request.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return json({success: false, error: 'Busca inválida.'}, 400);
+    const query = str(body.query);
+    if (!query || query.length > 300) return json({success: false, error: 'Informe um termo de busca de até 300 caracteres.'}, 400);
+    const location = str(body.location) || 'Manaus, AM';
+    const page = body.page === undefined ? 1 : body.page;
+    const num = body.num === undefined ? 20 : body.num;
+    if (!Number.isInteger(page) || page < 1 || page > 100 || !Number.isInteger(num) || num < 1 || num > 100 || location.length > 200) return json({success: false, error: 'Paginação ou localização inválida.'}, 400);
+    const apiKey = process.env.SERPER_API_KEY?.trim();
+    if (!apiKey) return json({success: false, error: 'Consulta indisponível: configure SERPER_API_KEY no servidor.'}, 503);
+    const response = await fetch('https://google.serper.dev/places', {
+      method: 'POST', headers: {'X-API-KEY': apiKey, 'Content-Type': 'application/json'},
+      body: JSON.stringify({q: query, gl: 'br', hl: 'pt-br', page, num, location}), signal: AbortSignal.timeout(18000),
     });
-
-    if (!serperResponse.ok) {
-      const errorText = await serperResponse.text();
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Erro retornado pelo Serper (${serperResponse.status}): ${errorText.slice(0, 200)}`
-        },
-        { status: serperResponse.status }
-      );
-    }
-
-    const serperData = (await serperResponse.json()) as { places?: SerperPlace[]; credits?: number };
-    const rawPlaces = serperData.places || [];
-
-    // Map and enrich places into VIBE OS Lead candidates
-    const places = rawPlaces.map((place, index) => {
-      const nicho = detectNicho(place.category || place.type, query);
-      const evalPresence = evaluateDigitalPresence(place.website, place.rating, place.ratingCount);
-
-      // Clean phone numbers and prepare WhatsApp link
-      const rawPhone = place.phoneNumber || '';
-      const cleanDigits = rawPhone.replace(/\D/g, '');
-      const isBrPhone = cleanDigits.length >= 10 && cleanDigits.length <= 11;
-      const formattedWhatsapp = isBrPhone ? `55${cleanDigits}` : cleanDigits;
-
-      return {
-        id: `serper_${place.placeId || place.cid || Date.now()}_${index}`,
-        placeId: place.placeId || null,
-        cid: place.cid || null,
-        nomeEmpresa: place.title,
-        categoria: place.category || place.type || 'Comércio Local',
-        nicho,
-        localizacao: place.address || location,
-        telefoneOriginal: place.phoneNumber || null,
-        telefoneLimpo: cleanDigits || null,
-        whatsappFormatted: formattedWhatsapp || null,
-        website: place.website || null,
-        rating: place.rating || null,
-        ratingCount: place.ratingCount || 0,
-        ...evalPresence,
-        source: 'prospecteezy:serper',
-        collectedAt: new Date().toISOString()
-      };
+    if (!response.ok) return json({success: false, error: 'O provedor de busca não concluiu a consulta.'}, 502);
+    const data = await response.json();
+    if (!data || !Array.isArray(data.places)) return json({success: false, error: 'Resposta inválida do provedor de busca.'}, 502);
+    const collectedAt = new Date().toISOString();
+    const places = data.places.slice(0, num).flatMap((value: unknown, index: number) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+      const place = value as Record<string, unknown>;
+      const nomeEmpresa = str(place.title);
+      if (!nomeEmpresa) return [];
+      const phone = normalizePhone(place.phoneNumber);
+      const categoria = str(place.category) || str(place.type);
+      const rating = metric(place.rating, 5);
+      const ratingCount = metric(place.ratingCount, Number.MAX_SAFE_INTEGER, true);
+      const analysis = analyzeLead({website: place.website, phoneWhatsapp: phone, rating, ratingCount, source: 'serper:places', observedAt: collectedAt});
+      return [{
+        id: `serper_${str(place.placeId) || str(place.cid) || collectedAt}_${index}`,
+        placeId: str(place.placeId), cid: str(place.cid), nomeEmpresa, categoria,
+        nicho: normalizeNicho(categoria || query), localizacao: str(place.address) || location,
+        telefoneOriginal: str(place.phoneNumber), telefoneLimpo: phone, whatsappFormatted: phone,
+        website: analysis.facts.websiteUrl, rating, ratingCount, analysis,
+        hasSite: null, isSocialOnly: null, diagnostico: 'Análise preliminar dos canais informados; validações pendentes.',
+        authorityScore: null, percentSocial: null, urgencia: null, potencialFechamento: null,
+        source: 'prospecteezy:serper', collectedAt,
+      }];
     });
-
-    return NextResponse.json({
-      success: true,
-      query,
-      location,
-      page: Number(page) || 1,
-      totalCount: places.length,
-      creditsUsed: serperData.credits || 1,
-      places
-    });
-  } catch (error: any) {
-    console.error('[Serper API Error]:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Falha ao consultar o motor de busca Serper.'
-      },
-      { status: 500 }
-    );
+    return json({success: true, query, location, page, totalCount: places.length, creditsUsed: metric(data.credits, Number.MAX_SAFE_INTEGER), places});
+  } catch {
+    return json({success: false, error: 'Não foi possível concluir a consulta. Verifique os parâmetros ou tente novamente.'}, 400);
   }
 }

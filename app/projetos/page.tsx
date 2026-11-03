@@ -13,15 +13,26 @@ import {
   CheckSquare,
   X
 } from 'lucide-react';
-import { getStoredData, setStoredData, INITIAL_PROJECTS_FULL } from '../../lib/crm-store';
-import { Project, ProjectStatus } from '../../types/crm';
+import { useCrmCollection } from '../../lib/crm-client';
+import { reconcileProject, toggleProjectTask } from '../../lib/operations-domain';
+import { Project, Company, Contract } from '../../types/crm';
+import { normalizePhone } from '../../lib/lead-normalization';
+type LinkedProject = Project & { contractId?: string };
 import { useAuth } from '../../lib/auth-context';
 
 export default function ProjetosPage() {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>(() =>
-    getStoredData('vibe_projects', INITIAL_PROJECTS_FULL)
-  );
+  const [projects, saveAsync, { loading, error }] = useCrmCollection<LinkedProject[]>('vibe_projects', []);
+  const [companies] = useCrmCollection<Company[]>('vibe_companies', []);
+  const [contracts] = useCrmCollection<Contract[]>('vibe_contracts', []);
+  const [actionError, setActionError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const persist = async (next: LinkedProject[]) => {
+    setActionError(''); setBusy(true);
+    try { await saveAsync(next); return true; }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao salvar.'); return false; }
+    finally { setBusy(false); }
+  };
   const [riskFilter, setRiskFilter] = useState<'ALL' | 'RISK_ONLY'>('ALL');
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
 
@@ -29,7 +40,10 @@ export default function ProjetosPage() {
   const [newCompany, setNewCompany] = useState('');
   const [newDecisor, setNewDecisor] = useState('');
   const [newType, setNewType] = useState('Presença Própria');
-  const [newTotalVal, setNewTotalVal] = useState(2400);
+  const [newTotalVal, setNewTotalVal] = useState(0);
+  const [companyId, setCompanyId] = useState('');
+  const [contractId, setContractId] = useState('');
+  const [deadlineDays, setDeadlineDays] = useState(0);
 
   const activeProjectsCount = projects.filter((p) => p.status !== 'CONCLUIDO').length;
   const criticalCount = projects.filter((p) => p.riskLevel === 'CRITICO' || p.riskLevel === 'ATENCAO').length;
@@ -41,64 +55,55 @@ export default function ProjetosPage() {
     return true;
   });
 
-  const handleCreateProject = (e: React.FormEvent) => {
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCompany) return;
+    if (!newCompany.trim() || busy || loading || !user) return;
+    const projectId = crypto.randomUUID();
+    const company = companies.find(c => c.id === companyId);
+    if (companyId && !company) { setActionError('Empresa não encontrada.'); return; }
+    if (contractId && !contracts.some(c => c.id === contractId && c.companyId === companyId)) { setActionError('Contrato deve pertencer à empresa selecionada.'); return; }
+    if (!Number.isFinite(newTotalVal) || newTotalVal < 0 || !Number.isInteger(deadlineDays) || deadlineDays < 0) { setActionError('Informe valor e prazo válidos.'); return; }
 
-    const created: Project = {
-      id: `proj_${Date.now()}`,
-      nomeEmpresa: newCompany,
-      clientName: newDecisor || 'Cliente VIBE',
-      nicho: 'ESTETICA',
-      projectType: newType as any,
+    const created: LinkedProject = {
+      id: projectId,
+      companyId: companyId || undefined,
+      contractId: contractId || undefined,
+      nomeEmpresa: company?.name || newCompany,
+      clientName: newDecisor,
+      nicho: company?.nicho || 'OUTROS',
+      projectType: newType as Project['projectType'],
       status: 'ONBOARDING',
       riskLevel: 'NORMAL',
-      progress: 15,
+      progress: 0,
       valorTotal: Number(newTotalVal),
-      valorSinal: Number(newTotalVal) * 0.5,
-      prazoDias: 7,
+      valorSinal: 0,
+      prazoDias: deadlineDays,
       dataInicio: new Date().toISOString(),
-      dataPrevisao: new Date(Date.now() + 7 * 86400000).toISOString(),
-      checklistNormas: true,
-      ownerName: user?.name || 'Daniel Leite',
+      dataPrevisao: deadlineDays ? new Date(Date.now() + deadlineDays * 86400000).toISOString() : '',
+      checklistNormas: false,
+      ownerName: user.name,
       tasks: [
-        { id: `tsk-1-${Date.now()}`, projectId: `proj_${Date.now()}`, title: 'Kickoff & Briefing', assignedTo: 'Victor Belichar', dueDate: '1 dia', completed: true },
-        { id: `tsk-2-${Date.now()}`, projectId: `proj_${Date.now()}`, title: 'Wireframe & Copywriting', assignedTo: 'Daniel Leite', dueDate: '2 dias', completed: false },
-        { id: `tsk-3-${Date.now()}`, projectId: `proj_${Date.now()}`, title: 'Frontend & SEO Local', assignedTo: 'Daniel Leite', dueDate: '4 dias', completed: false }
+        { id: crypto.randomUUID(), projectId, title: 'Kickoff & Briefing', assignedTo: user.name, dueDate: '', completed: false, status: 'A_FAZER' }
       ]
     };
 
     const updated = [created, ...projects];
-    setProjects(updated);
-    setStoredData('vibe_projects', updated);
+    if (!await persist(updated)) return;
     setIsNewProjectModalOpen(false);
     setNewCompany('');
     setNewDecisor('');
   };
 
-  const handleTaskToggle = (projId: string, taskId: string, e: React.MouseEvent) => {
+  const handleTaskToggle = async (projId: string, taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = projects.map((p) => {
-      if (p.id === projId) {
-        const tasks = (p.tasks || []).map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t));
-        const completed = tasks.filter((t) => t.completed).length;
-        const progress = Math.round((completed / tasks.length) * 100);
-        return {
-          ...p,
-          tasks,
-          progress,
-          status: progress === 100 ? ('CONCLUIDO' as ProjectStatus) : p.status
-        };
-      }
-      return p;
-    });
-
-    setProjects(updated);
-    setStoredData('vibe_projects', updated);
+    if (busy || loading) return;
+    await persist(toggleProjectTask(projects, projId, taskId));
   };
 
   return (
     <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+      {loading && <p role="status">Carregando projetos…</p>}
+      {(error || actionError) && <p role="alert" className="text-rose-400">{String(error || actionError)}</p>}
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div>
@@ -211,6 +216,8 @@ export default function ProjetosPage() {
           <div className="space-y-3">
             {filteredProjects.map((proj) => {
               const isCritical = proj.riskLevel === 'CRITICO' || proj.riskLevel === 'ATENCAO';
+              const company = companies.find(c => c.id === proj.companyId);
+              const phone = normalizePhone(company?.whatsapp || company?.decisorPhone || '');
 
               return (
                 <div
@@ -246,9 +253,9 @@ export default function ProjetosPage() {
                     </div>
 
                     <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                      {isCritical && (
+                      {isCritical && phone && (
                         <a
-                          href={`https://wa.me/5592992027059?text=Ol%C3%A1%20${encodeURIComponent(proj.clientName)},%20precisamos%20dos%20ativos%20para%20concluir%20a%20entrega%20no%20prazo!`}
+                          href={`https://wa.me/${phone}?text=${encodeURIComponent(`Olá ${proj.clientName}, podemos conversar sobre os próximos passos do projeto?`)}`}
                           target="_blank"
                           rel="noreferrer"
                           className="h-7 px-2.5 rounded-md bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 text-xs font-medium flex items-center gap-1 transition-colors"
@@ -326,6 +333,10 @@ export default function ProjetosPage() {
             </div>
 
             <form onSubmit={handleCreateProject} className="space-y-3 text-xs">
+              {actionError && <p role="alert" className="text-rose-400">{actionError}</p>}
+              <select aria-label="Empresa vinculada ao projeto" value={companyId} onChange={e => { setCompanyId(e.target.value); setContractId(''); const c=companies.find(c => c.id === e.target.value); if (c) { setNewCompany(c.name); setNewDecisor(c.decisorName || ''); } }} className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Cadastro direto (sem vínculo)</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+              <select aria-label="Contrato vinculado ao projeto" value={contractId} onChange={e => setContractId(e.target.value)} className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Sem contrato vinculado</option>{contracts.filter(c => c.companyId === companyId).map(c => <option key={c.id} value={c.id}>{c.contractNumber}</option>)}</select>
+              <label className="block text-slate-300">Prazo acordado em dias (0 = não definido)<input aria-label="Prazo acordado" type="number" min="0" step="1" value={deadlineDays} onChange={e => setDeadlineDays(Number(e.target.value))} className="block w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" /></label>
               <div>
                 <label className="block text-slate-300 font-medium mb-1">Empresa / Cliente</label>
                 <input
@@ -356,9 +367,9 @@ export default function ProjetosPage() {
                   onChange={(e) => setNewType(e.target.value)}
                   className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
                 >
-                  <option value="Presença Própria">Presença Própria (SLA 7d)</option>
+                  <option value="Presença Própria">Presença Própria</option>
                   <option value="Esteira de Crescimento">Esteira de Crescimento</option>
-                  <option value="Sistema Sob Medida">Sistema Sob Medida</option>
+                  <option value="Sistema sob Medida">Sistema sob Medida</option>
                 </select>
               </div>
 

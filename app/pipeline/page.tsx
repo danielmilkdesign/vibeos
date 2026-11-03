@@ -13,8 +13,9 @@ import {
   Filter
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
-import { getStoredData, setStoredData, INITIAL_OPPORTUNITIES } from '../../lib/crm-store';
-import { Opportunity } from '../../types/crm';
+import { useCrmCollection } from '../../lib/crm-client';
+import { canonicalStage, commercialMetrics, filterOpportunities, PIPELINE_STAGES } from '../../lib/commercial-domain';
+import { Opportunity, Company } from '../../types/crm';
 
 interface KanbanColumn {
   id: string;
@@ -23,9 +24,9 @@ interface KanbanColumn {
 
 export default function PipelinePage() {
   const { user } = useAuth();
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(() =>
-    getStoredData('vibe_opps', INITIAL_OPPORTUNITIES)
-  );
+  const [opportunities, saveOpportunities] = useCrmCollection<Opportunity[]>('vibe_opps', []);
+  const [companies] = useCrmCollection<Company[]>('vibe_companies', []);
+  const [saveError, setSaveError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [segmentFilter, setSegmentFilter] = useState('ALL');
   const [isNewOppModalOpen, setIsNewOppModalOpen] = useState(false);
@@ -39,23 +40,17 @@ export default function PipelinePage() {
   const [newTitle, setNewTitle] = useState('');
   const [newCompany, setNewCompany] = useState('');
   const [newDecisor, setNewDecisor] = useState('');
-  const [newValue, setNewValue] = useState(2200);
+  const [newValue, setNewValue] = useState(0);
   const [newStage, setNewStage] = useState('QUALIFICADO');
 
-  const totalPipeline = opportunities.reduce((acc, o) => acc + (o.estimatedValue || 0), 0);
-  const weightedValue = Math.round(opportunities.reduce((acc, o) => acc + (o.estimatedValue || 0) * ((o.probability || 0) / 100), 0));
-  const closedWonCount = opportunities.filter((o) => (o.stage as string) === 'FECHADO_GANHO' || (o.stage as string) === 'FECHADO').length;
-  const conversionRate = opportunities.length > 0 ? Math.round((closedWonCount / opportunities.length) * 100) : 0;
+  const metrics = commercialMetrics(opportunities, []);
+  const totalPipeline = metrics.openValue;
+  const weightedValue = metrics.weightedValue;
+  const closedWonCount = metrics.wonCount;
+  const conversionRate = metrics.conversionRate?.toFixed(1) ?? '—';
   const weightedPercent = totalPipeline > 0 ? ((weightedValue / totalPipeline) * 100).toFixed(0) : '0';
 
-  const columns: KanbanColumn[] = [
-    { id: 'QUALIFICADO', title: 'Qualificado' },
-    { id: 'ANALISE_AGENDADA', title: 'Análise Agendada' },
-    { id: 'ANALISE_REALIZADA', title: 'Diagnóstico Realizado' },
-    { id: 'PROPOSTA_ENVIADA', title: 'Proposta Enviada' },
-    { id: 'NEGOCIACAO', title: 'Em Negociação' },
-    { id: 'FECHADO_GANHO', title: 'Fechado Ganho' }
-  ];
+  const columns: readonly KanbanColumn[] = PIPELINE_STAGES;
 
   const handleStageChangeInitiate = (oppId: string, targetStage: string) => {
     if (targetStage !== 'FECHADO_GANHO' && targetStage !== 'FECHADO_PERDIDO') {
@@ -67,22 +62,26 @@ export default function PipelinePage() {
     }
   };
 
-  const executeStageUpdate = (oppId: string, targetStage: string, actionNote?: string) => {
+  const executeStageUpdate = async (oppId: string, targetStage: string, actionNote?: string) => {
+    setSaveError('');
     const updated = opportunities.map((o) => {
       if (o.id === oppId) {
         return {
           ...o,
           stage: targetStage as any,
           nextAction: actionNote || o.nextAction,
+          nextActionDate: nextActionDate ? new Date(nextActionDate).toISOString() : o.nextActionDate,
+          ...(['FECHADO_GANHO','FECHADO_PERDIDO'].includes(targetStage) ? {closedAt:new Date().toISOString()} : {}),
           updatedAt: new Date().toISOString()
         };
       }
       return o;
     });
 
-    setOpportunities(updated);
-    setStoredData('vibe_opps', updated);
-    setPendingMove(null);
+    try {
+      await saveOpportunities(updated);
+      setPendingMove(null);
+    } catch (error) { setSaveError(error instanceof Error ? error.message : 'Não foi possível salvar a etapa.'); }
   };
 
   const handleConfirmNextAction = (e: React.FormEvent) => {
@@ -95,17 +94,17 @@ export default function PipelinePage() {
     );
   };
 
-  const handleCreateOpportunity = (e: React.FormEvent) => {
+  const handleCreateOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCompany) return;
 
     const newOpp: Opportunity = {
-      id: `opp_${Date.now()}`,
-      companyId: `comp_${Date.now()}`,
-      title: newTitle || 'Presença Própria + Tráfego Local',
+      id: crypto.randomUUID(),
+      companyId: companies.find(c => c.name.toLowerCase() === newCompany.trim().toLowerCase())?.id,
+      title: newTitle || 'Oportunidade a diagnosticar',
       companyName: newCompany,
       decisorName: newDecisor || 'Decisor a qualificar',
-      offerName: 'Presença Própria (SLA 7d)',
+      offerName: 'Oferta pendente de diagnóstico',
       setupValue: Number(newValue),
       recurringValue: 0,
       stage: newStage as any,
@@ -113,14 +112,13 @@ export default function PipelinePage() {
       probability: newStage === 'QUALIFICADO' ? 30 : newStage === 'ANALISE_AGENDADA' ? 50 : 70,
       nextAction: 'Agendar diagnóstico inicial de 30 min',
       nextActionDate: new Date(Date.now() + 2 * 86400000).toISOString(),
-      ownerName: user?.name || 'Daniel Leite',
+      ownerName: user?.name || 'Equipe comercial',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
     const updated = [newOpp, ...opportunities];
-    setOpportunities(updated);
-    setStoredData('vibe_opps', updated);
+    try { await saveOpportunities(updated); } catch(error) { setSaveError(error instanceof Error ? error.message : 'Não foi possível criar a oportunidade.'); return; }
     setIsNewOppModalOpen(false);
     setNewCompany('');
     setNewTitle('');
@@ -133,11 +131,12 @@ export default function PipelinePage() {
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (opp.decisorName && opp.decisorName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    return matchesSearch;
+    return matchesSearch && filterOpportunities([opp], '', segmentFilter, companies).length > 0;
   });
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
+      {saveError && <p role="alert" className="text-rose-400">{saveError}</p>}
       {/* 1. Header & Summary Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div>
@@ -212,7 +211,7 @@ export default function PipelinePage() {
         <div className="flex items-start gap-3 min-w-max">
           {columns.map((col) => {
             const colOpps = filteredOpps.filter((o) => {
-              const stage = o.stage as string;
+              const stage = canonicalStage(o.stage);
               if (col.id === 'QUALIFICADO') return stage === 'QUALIFICADO' || stage === 'LEAD_NOVO';
               if (col.id === 'ANALISE_AGENDADA') return stage === 'ANALISE_AGENDADA' || stage === 'REUNIAO_AGENDADA';
               if (col.id === 'ANALISE_REALIZADA') return stage === 'ANALISE_REALIZADA' || stage === 'DIAGNOSTICO_GERADO';
@@ -308,10 +307,11 @@ export default function PipelinePage() {
                           )}
 
                           {/* Card Footer: Stage Advance Dropdown */}
+                          <a className="text-xs text-cyan-300 underline focus-visible:ring-2 focus-visible:ring-cyan-400" href={`/propostas?leadId=${encodeURIComponent(opp.leadId || '')}&opportunityId=${encodeURIComponent(opp.id)}`}>Diagnóstico e rascunhos de proposta</a>
                           {col.id !== 'FECHADO_GANHO' && (
                             <div className="flex items-center justify-between pt-1 text-[11px]">
                               <select
-                                value={opp.stage}
+                                value={canonicalStage(opp.stage)}
                                 onChange={(e) => handleStageChangeInitiate(opp.id, e.target.value)}
                                 className="bg-white/[0.04] border border-white/[0.06] rounded px-1.5 py-0.5 text-[10px] text-cyan-400 focus:outline-none cursor-pointer"
                               >
@@ -321,6 +321,7 @@ export default function PipelinePage() {
                                 <option value="PROPOSTA_ENVIADA">Mover: Proposta</option>
                                 <option value="NEGOCIACAO">Mover: Negociação</option>
                                 <option value="FECHADO_GANHO">Mover: Fechado ✓</option>
+                                <option value="FECHADO_PERDIDO">Mover: Perdido</option>
                               </select>
 
                               <div

@@ -1,106 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {createHmac,timingSafeEqual} from 'node:crypto';
 import prisma from '../../../../lib/prisma';
-
-/**
- * Webhook Inbound: Recebe leads gerados pelo site vibe-design-tech.vercel.app
- * Formatos suportados: JSON de formulário, Typeform, Tally, n8n ou WhatsApp Bot.
- */
-export async function POST(request: NextRequest) {
-  try {
-    const payload = await request.json();
-
-    // Normalização flexível de campos
-    const nomeEmpresa =
-      payload.nomeEmpresa ||
-      payload.empresa ||
-      payload.company ||
-      payload.nome ||
-      'Lead Inbound Sem Nome';
-
-    const nomeDecisor =
-      payload.nomeDecisor ||
-      payload.decisor ||
-      payload.nomeContato ||
-      payload.contact_name ||
-      'Contato do Site';
-
-    const phoneWhatsapp =
-      payload.phoneWhatsapp ||
-      payload.whatsapp ||
-      payload.telefone ||
-      payload.phone ||
-      '';
-
-    const emailDecisor =
-      payload.emailDecisor ||
-      payload.email ||
-      '';
-
-    const nichoRaw = (
-      payload.nicho ||
-      payload.segmento ||
-      payload.sector ||
-      'OUTROS'
-    ).toUpperCase();
-
-    // Mapeamento para NichoEnum válido
-    let nicho = 'OUTROS';
-    if (nichoRaw.includes('ESTETICA') || nichoRaw.includes('BELEZA')) nicho = 'ESTETICA';
-    else if (nichoRaw.includes('ODONTO') || nichoRaw.includes('DENTISTA')) nicho = 'ODONTOLOGIA';
-    else if (nichoRaw.includes('PERSONAL') || nichoRaw.includes('FITNESS')) nicho = 'PERSONAL_TRAINER';
-    else if (nichoRaw.includes('MEDIC') || nichoRaw.includes('SAUDE')) nicho = 'MEDICINA';
-    else if (nichoRaw.includes('ADVOG') || nichoRaw.includes('JURID')) nicho = 'ADVOCACIA';
-
-    const ofertaInteresse =
-      payload.oferta ||
-      payload.plano ||
-      payload.interesse ||
-      'Presença Própria';
-
-    const diagnostico =
-      payload.mensagem ||
-      payload.diagnostico ||
-      `Lead recebido do site oficial (Interesse: ${ofertaInteresse}). Solicitação de Análise de 30 minutos.`;
-
-    try {
-      const newLead = await prisma.lead.create({
-        data: {
-          nomeEmpresa,
-          nicho: nicho as any,
-          localizacao: payload.cidade ? `${payload.cidade}, AM` : 'Manaus, AM',
-          nomeDecisor,
-          emailDecisor: emailDecisor || null,
-          phoneWhatsapp: phoneWhatsapp || null,
-          diagnosticoSeo: diagnostico,
-          status: 'LEAD_NOVO',
-          urgencia: 'CRITICA',
-          valorEstimado: ofertaInteresse.includes('Clínica') ? 3200 : 2200
-        }
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: 'Lead recebido e cadastrado no pipeline do VIBE OS.',
-        leadId: newLead.id
-      }, { status: 201 });
-    } catch (dbErr) {
-      console.warn('[VIBE OS - Webhook]: DB offline, returning payload confirmation', dbErr);
-      return NextResponse.json({
-        success: true,
-        message: 'Lead recebido com sucesso (modo seguro local).',
-        payload: {
-          nomeEmpresa,
-          nomeDecisor,
-          phoneWhatsapp,
-          nicho,
-          ofertaInteresse
-        }
-      }, { status: 200 });
-    }
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: 'Payload de webhook inválido: ' + err.message },
-      { status: 400 }
-    );
+import { persistLead } from '../../../../lib/crm-server';
+import { CRM_TRANSACTION_BUDGET } from '../../../../lib/db-transactions';
+const json=(data:unknown,status:number)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
+// Per-process safety cap; configure a distributed limiter/WAF at deployment.
+let windowStart=Date.now(), requestsInWindow=0;
+async function readBody(request:Request):Promise<string> {
+ const reader=request.body?.getReader(); if(!reader)throw new Error('body');
+ const chunks:Uint8Array[]=[];let total=0;
+ try {while(true){const {done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>65536)throw new Error('size');chunks.push(value);}}finally{await reader.cancel();}
+ return Buffer.concat(chunks).toString('utf8');
+}
+export async function POST(request:Request) {
+ const secret=process.env.LEAD_WEBHOOK_SECRET;
+ if(!secret||Buffer.byteLength(secret)<32)return json({error:'Webhook indisponível.'},503);
+ if(Date.now()-windowStart>=60000){windowStart=Date.now();requestsInWindow=0;}
+ if(++requestsInWindow>60)return json({error:'Limite temporário de requisições.'},429);
+ const timestamp=request.headers.get('x-webhook-timestamp')||'';
+ const id=request.headers.get('x-webhook-id')||'';
+ const signature=request.headers.get('x-webhook-signature')||'';
+ if(!/^\d{10}$/.test(timestamp)||Math.abs(Date.now()/1000-Number(timestamp))>300||! /^[A-Za-z0-9_-]{8,128}$/.test(id)||!/^sha256=[a-f0-9]{64}$/.test(signature))return json({error:'Webhook não autorizado.'},401);
+ let body:string;
+ try{body=await readBody(request);}catch{return json({error:'Corpo inválido ou excede 64 KiB.'},413);}
+ // Signature covers the timestamp, idempotency key AND exact raw body.
+ const expected=createHmac('sha256',secret).update(timestamp+'.'+id+'.'+body).digest();
+ if(!timingSafeEqual(expected,Buffer.from(signature.slice(7),'hex')))return json({error:'Webhook não autorizado.'},401);
+ let payload:any;
+ try{payload=JSON.parse(body);}catch{return json({error:'JSON inválido.'},400);}
+ if(!payload||typeof payload!=='object'||Array.isArray(payload))return json({error:'Payload inválido.'},400);
+ const field=(...keys:string[])=>{for(const k of keys){const v=payload[k];if(typeof v==='string'&&v.trim())return v.trim().slice(0,2000);}return '';};
+ const nomeEmpresa=field('nomeEmpresa','empresa','company');
+ if(!nomeEmpresa||nomeEmpresa.length>200)return json({error:'Empresa obrigatória (máximo 200 caracteres).'},400);
+ try {
+  // WebhookEvent.id must be a DB primary key. Claim and lead insert are atomic.
+  const db=prisma as any;
+  const result=await db.$transaction(async(tx:any)=>{
+   const existing=await tx.webhookEvent.findUnique({where:{id}});
+   if(existing)return {duplicate:true};
+   await tx.webhookEvent.create({data:{id}});
+   const result=await persistLead({nomeEmpresa,externalId:`webhook:${id}`,nomeDecisor:field('nomeDecisor','nomeContato','contact_name')||null,
+    emailDecisor:field('emailDecisor','email')||null,phoneWhatsapp:field('phoneWhatsapp','whatsapp','telefone','phone')||null,
+    nicho:field('nicho','segmento')||'OUTROS',localizacao:field('cidade')||'',website:field('website','site')||null,diagnosticoSeo:field('mensagem','diagnostico')||null,
+    valorEstimado:0},'ADMINISTRADOR',tx);
+   return {leadId:result.lead.id,opportunityId:result.opportunity.id,persisted:true};
+  }, CRM_TRANSACTION_BUDGET);
+  return json({success:true,...result},result.duplicate?200:201);
+ }catch(error:any){
+  if(error?.code==='P2002'){
+   try{const prior=await (prisma as any).webhookEvent.findUnique({where:{id}});if(prior)return json({success:true,duplicate:true},200);}catch{}
   }
+  return json({error:'Persistência indisponível; evento não confirmado.'},503);
+ }
 }

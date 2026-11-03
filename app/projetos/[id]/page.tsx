@@ -19,21 +19,33 @@ import {
   CheckSquare,
   ChevronRight
 } from 'lucide-react';
-import { getStoredData, setStoredData, INITIAL_PROJECTS_FULL } from '../../../lib/crm-store';
-import { Project, ProjectStatus, RiskLevel, ProjectTask } from '../../../types/crm';
+import { useCrmCollection } from '../../../lib/crm-client';
+import { reconcileProject, toggleProjectTask } from '../../../lib/operations-domain';
+import { useAuth } from '../../../lib/auth-context';
+import { Project, ProjectStatus, RiskLevel, ProjectTask, Deliverable } from '../../../types/crm';
 
 export default function ProjetoDetailPage() {
   const params = useParams();
   const id = params?.id as string;
-  const [projects, setProjects] = useState<Project[]>(() =>
-    getStoredData('vibe_projects', INITIAL_PROJECTS_FULL)
-  );
+  const { user } = useAuth();
+  const [projects, saveAsync, { loading, error }] = useCrmCollection<Project[]>('vibe_projects', []);
+  const [deliverables] = useCrmCollection<(Deliverable & {projectId?: string})[]>('vibe_deliverables', []);
+  const [actionError, setActionError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const persist = async (next: Project[]) => {
+    setActionError(''); setBusy(true);
+    try { await saveAsync(next); return true; }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao salvar.'); return false; }
+    finally { setBusy(false); }
+  };
 
   const foundProject = projects.find((p) => p.id === id);
   const [activeTab, setActiveTab] = useState<'TAREFAS' | 'SLA' | 'CONFORMIDADE'>('TAREFAS');
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskAssignee, setNewTaskAssignee] = useState('Daniel Leite');
+  const [newTaskAssignee, setNewTaskAssignee] = useState('');
 
+  if (error) return <p role="alert" className="p-6 text-rose-400">{String(error)}</p>;
+  if (loading) return <p role="status" className="p-6 text-slate-300">Carregando projeto…</p>;
   if (!foundProject) {
     return (
       <div className="p-8 max-w-4xl mx-auto text-center py-20 space-y-4">
@@ -54,38 +66,21 @@ export default function ProjetoDetailPage() {
     );
   }
 
-  const handleToggleTask = (taskId: string) => {
-    const updated = projects.map(p => {
-      if (p.id === foundProject.id) {
-        const tasks = (p.tasks || []).map(t =>
-          t.id === taskId ? { ...t, completed: !t.completed } : t
-        );
-        const completedCount = tasks.filter(t => t.completed).length;
-        const newProgress = Math.round((completedCount / tasks.length) * 100);
-        return {
-          ...p,
-          tasks,
-          progress: newProgress,
-          status: newProgress === 100 ? ('CONCLUIDO' as ProjectStatus) : p.status
-        };
-      }
-      return p;
-    });
-
-    setProjects(updated);
-    setStoredData('vibe_projects', updated);
+  const handleToggleTask = async (taskId: string) => {
+    if (busy) return;
+    await persist(toggleProjectTask(projects, foundProject.id, taskId));
   };
 
-  const handleAddTask = (e: React.FormEvent) => {
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle) return;
+    if (!newTaskTitle.trim() || busy || !user) return;
 
     const newTask: ProjectTask = {
-      id: `tsk-${Date.now()}`,
+      id: crypto.randomUUID(),
       projectId: foundProject.id,
       title: newTaskTitle,
-      assignedTo: newTaskAssignee,
-      dueDate: 'Em 3 dias',
+      assignedTo: newTaskAssignee.trim() || user.name,
+      dueDate: '',
       completed: false,
       status: 'A_FAZER'
     };
@@ -93,40 +88,35 @@ export default function ProjetoDetailPage() {
     const updated = projects.map(p => {
       if (p.id === foundProject.id) {
         const tasks = [...(p.tasks || []), newTask];
-        const completedCount = tasks.filter(t => t.completed).length;
-        const newProgress = Math.round((completedCount / tasks.length) * 100);
-        return {
-          ...p,
-          tasks,
-          progress: newProgress
-        };
+        return reconcileProject({ ...p, tasks });
       }
       return p;
     });
 
-    setProjects(updated);
-    setStoredData('vibe_projects', updated);
+    if (!await persist(updated)) return;
     setNewTaskTitle('');
   };
 
-  const handleUpdateStatus = (newStatus: ProjectStatus) => {
+  const handleUpdateStatus = async (newStatus: ProjectStatus) => {
+    if (newStatus === 'CONCLUIDO' && (!(foundProject.tasks || []).length || !(foundProject.tasks || []).every(t => t.completed))) {
+      setActionError('Conclua todas as tarefas antes de concluir o projeto.'); return;
+    }
     const updated = projects.map(p =>
-      p.id === foundProject.id ? { ...p, status: newStatus } : p
+      p.id === foundProject.id ? reconcileProject({ ...p, status: newStatus }) : p
     );
-    setProjects(updated);
-    setStoredData('vibe_projects', updated);
+    await persist(updated);
   };
 
-  const handleUpdateRisk = (newRisk: RiskLevel) => {
+  const handleUpdateRisk = async (newRisk: RiskLevel) => {
     const updated = projects.map(p =>
       p.id === foundProject.id ? { ...p, riskLevel: newRisk } : p
     );
-    setProjects(updated);
-    setStoredData('vibe_projects', updated);
+    await persist(updated);
   };
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {actionError && <p role="alert" className="text-rose-400">{actionError}</p>}
       {/* Back Link & Header */}
       <div>
         <Link
@@ -191,7 +181,7 @@ export default function ProjetoDetailPage() {
           {/* SLA & Progress Bar */}
           <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
             <div className="flex justify-between text-xs text-slate-300 font-mono">
-              <span>Garantia VIBE: <strong>SLA {foundProject.prazoDias || 7} Dias Corridos</strong></span>
+              <span>Prazo registrado: <strong>{foundProject.prazoDias ? `${foundProject.prazoDias} dias corridos` : 'Não definido'}</strong></span>
               <span className="text-emerald-400 font-bold">{foundProject.progress}% Concluído</span>
             </div>
             <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
@@ -255,9 +245,7 @@ export default function ProjetoDetailPage() {
               onChange={(e) => setNewTaskAssignee(e.target.value)}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200"
             >
-              <option value="Daniel Leite">Daniel Leite (Tech)</option>
-              <option value="Victor Belichar">Victor Belichar (Comercial)</option>
-              <option value="Fernanda Rocha">Fernanda Rocha (PM)</option>
+              <option value="">{user?.name || 'Sem responsável'} (sessão atual)</option>
               <option value="Cliente">Cliente (Aguardando)</option>
             </select>
             <button
@@ -307,11 +295,11 @@ export default function ProjetoDetailPage() {
             <div className="space-y-3 text-xs">
               <div className="flex justify-between py-2 border-b border-slate-800">
                 <span className="text-slate-400">Início:</span>
-                <span className="text-slate-200 font-mono">{foundProject.dataInicio ? new Date(foundProject.dataInicio).toLocaleDateString('pt-BR') : 'Hoje'}</span>
+                <span className="text-slate-200 font-mono">{foundProject.dataInicio ? new Date(foundProject.dataInicio).toLocaleDateString('pt-BR') : 'Não informado'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-800">
-                <span className="text-slate-400">Previsão de Entrega (SLA 7d):</span>
-                <span className="text-cyan-400 font-mono font-bold">{foundProject.dataPrevisao ? new Date(foundProject.dataPrevisao).toLocaleDateString('pt-BR') : 'Em 7 dias'}</span>
+                <span className="text-slate-400">Previsão de entrega registrada:</span>
+                <span className="text-cyan-400 font-mono font-bold">{foundProject.dataPrevisao ? new Date(foundProject.dataPrevisao).toLocaleDateString('pt-BR') : 'Não informada'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-800">
                 <span className="text-slate-400">Valor Total:</span>
@@ -319,7 +307,7 @@ export default function ProjetoDetailPage() {
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-slate-400">Sinal Recebido:</span>
-                <span className="text-slate-200 font-mono">R$ {foundProject.valorSinal.toLocaleString('pt-BR')} (50%)</span>
+                <span className="text-slate-200 font-mono">R$ {foundProject.valorSinal.toLocaleString('pt-BR')}</span>
               </div>
             </div>
           </div>
@@ -329,22 +317,8 @@ export default function ProjetoDetailPage() {
               <PackageCheck className="w-4 h-4 text-emerald-400" /> Entregáveis Contratados
             </h3>
             <ul className="space-y-2 text-xs text-slate-300">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Landing Page de Alta Conversão Responsiva
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Botão WhatsApp Direto Integrado
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Setup de Rastreamento (Meta Pixel + GA4)
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Hospedagem em Nuvem e Certificado SSL
-              </li>
+              {deliverables.filter(d => d.projectId === id).map(d => <li key={d.id}>{d.title} — {d.status}</li>)}
+              {!deliverables.some(d => d.projectId === id) && <li>Nenhuma entrega vinculada. Cadastre em Entregas com o ID deste projeto.</li>}
             </ul>
           </div>
         </div>
@@ -356,11 +330,11 @@ export default function ProjetoDetailPage() {
             <ShieldCheck className="w-4 h-4 text-emerald-400" /> Checklist de Normas do Conselho ({foundProject.nicho})
           </h3>
           <p className="text-xs text-slate-400">
-            Garantia de que textos, imagens de prova social e CTAs respeitam rigorosamente a legislação do conselho correspondente (OAB / CFO / CRM / LGPD).
+            Aprovações dependem de revisão humana e evidências registradas em Conformidade. Este painel não substitui análise jurídica ou do conselho correspondente.
           </p>
           <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-xs">
             <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-              <CheckCircle2 className="w-4 h-4" /> Checklist Ético Verificado e Aprovado pelo Responsável Técnico
+              <ShieldCheck className="w-4 h-4" /> Consulte a auditoria registrada em Conformidade; este projeto não comprova aprovação regulatória.
             </div>
           </div>
         </div>

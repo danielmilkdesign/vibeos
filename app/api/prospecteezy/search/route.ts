@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireSession } from '../../../../lib/server-auth';
 
 // Serper Places devolve no máximo PAGE_SIZE resultados por requisição.
 // Para coletar mais, é preciso iterar as páginas (parâmetro `page`).
@@ -68,7 +69,12 @@ async function fetchPlacesPage(apiKey: string, query: string, page: number, loca
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireSession(req, ['ADMINISTRADOR','GESTOR_COMERCIAL','COMERCIAL']);
+    if (auth instanceof Response) return auth;
     const { query, location } = await req.json();
+    if (typeof query !== 'string' || !query.trim() || query.length > 160 || (location !== undefined && (typeof location !== 'string' || location.length > 160))) {
+      return NextResponse.json({success:false,error:'Informe nicho e localização válidos (até 160 caracteres).'}, {status:400});
+    }
 
     const apiKey = process.env.SERPER_API_KEY;
     if (!apiKey) {

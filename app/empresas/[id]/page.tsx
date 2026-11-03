@@ -24,14 +24,9 @@ import {
   TrendingUp,
   ShieldCheck
 } from 'lucide-react';
-import {
-  getStoredData,
-  INITIAL_OPPORTUNITIES,
-  INITIAL_PROJECTS_FULL,
-  INITIAL_CONTRACTS,
-  INITIAL_PROPOSALS
-} from '../../../lib/crm-store';
-import { INITIAL_COMPANIES } from '../../../lib/crm-initial-data';
+import { useCrmCollection } from '../../../lib/crm-client';
+import { companyRelations } from '../../../lib/operations-domain';
+import { normalizePhone } from '../../../lib/lead-normalization';
 import { Company, Opportunity, Project, Contract, Proposal } from '../../../types/crm';
 
 export default function EmpresaDetailPage() {
@@ -39,9 +34,17 @@ export default function EmpresaDetailPage() {
   const id = params?.id as string;
   const [activeTab, setActiveTab] = useState<'VISAO_GERAL' | 'OPORTUNIDADES' | 'PROPOSTAS' | 'PROJETOS' | 'CONTRATOS'>('VISAO_GERAL');
 
-  const companies = getStoredData<Company[]>('vibe_companies', INITIAL_COMPANIES);
+  const [companies, , companiesState] = useCrmCollection<Company[]>('vibe_companies', []);
+  const [allOpportunities, , opportunitiesState] = useCrmCollection<Opportunity[]>('vibe_opps', []);
+  const [allProjects, , projectsState] = useCrmCollection<Project[]>('vibe_projects', []);
+  const [allContracts, , contractsState] = useCrmCollection<Contract[]>('vibe_contracts', []);
+  const [allProposals, , proposalsState] = useCrmCollection<Proposal[]>('vibe_proposals', []);
+  const loading = [companiesState, opportunitiesState, projectsState, contractsState, proposalsState].some(s => s.loading);
+  const error = [companiesState, opportunitiesState, projectsState, contractsState, proposalsState].find(s => s.error)?.error;
   const foundCompany = companies.find((e) => e.id === id);
 
+  if (error) return <p role="alert" className="p-6 text-rose-400">{String(error)}</p>;
+  if (loading) return <p role="status" className="p-6 text-slate-300">Carregando empresa…</p>;
   if (!foundCompany) {
     return (
       <div className="p-8 max-w-4xl mx-auto text-center py-20 space-y-4">
@@ -62,23 +65,11 @@ export default function EmpresaDetailPage() {
     );
   }
 
-  const opportunities = getStoredData<Opportunity[]>('vibe_opps', INITIAL_OPPORTUNITIES).filter(
-    (o) => o.companyId === id || o.companyName.toLowerCase().includes(foundCompany.name.toLowerCase())
-  );
-
-  const projects = getStoredData<Project[]>('vibe_projects', INITIAL_PROJECTS_FULL).filter(
-    (p) => p.companyId === id || p.nomeEmpresa.toLowerCase().includes(foundCompany.name.toLowerCase())
-  );
-
-  const contracts = getStoredData<Contract[]>('vibe_contracts', INITIAL_CONTRACTS).filter((c) =>
-    c.companyName.toLowerCase().includes(foundCompany.name.toLowerCase())
-  );
-
-  const proposals = getStoredData<Proposal[]>('vibe_proposals', INITIAL_PROPOSALS).filter(
-    (p) => p.clientName.toLowerCase().includes(foundCompany.name.toLowerCase()) || p.companyId === id
-  );
-
-  const cleanPhone = (foundCompany.whatsapp || foundCompany.decisorPhone || '5592992027059').replace(/\D/g, '');
+  const opportunities = companyRelations(allOpportunities, id);
+  const projects = companyRelations(allProjects, id);
+  const contracts = companyRelations(allContracts, id);
+  const proposals = companyRelations(allProposals, id);
+  const cleanPhone = normalizePhone(foundCompany.whatsapp || foundCompany.decisorPhone || '');
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
@@ -117,19 +108,21 @@ export default function EmpresaDetailPage() {
                   <span>•</span>
                   <span>{foundCompany.city}, {foundCompany.state}</span>
                   <span>•</span>
-                  <span>Resp: <strong className="text-cyan-400">{foundCompany.ownerName || 'Victor Belichar'}</strong></span>
+                  <span>Resp: <strong className="text-cyan-400">{foundCompany.ownerName || 'Não informado'}</strong></span>
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <a
-                href={`https://wa.me/${cleanPhone}`}
+                href={cleanPhone ? `https://wa.me/${cleanPhone}` : undefined}
+                aria-disabled={!cleanPhone}
+                tabIndex={cleanPhone ? 0 : -1}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all"
               >
-                <MessageSquare className="w-4 h-4" /> Conversar no WhatsApp
+                <MessageSquare className="w-4 h-4" /> {cleanPhone ? 'Conversar no WhatsApp' : 'Telefone não informado'}
               </a>
               {foundCompany.website && (
                 <a

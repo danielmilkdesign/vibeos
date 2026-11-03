@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!email) {
@@ -24,7 +24,7 @@ export default function LoginPage() {
       setError('Por favor, informe sua senha de acesso.');
       return;
     }
-    const result = login(email, password, rememberMe);
+    const result = await login(email, password, rememberMe);
     if (!result.success) {
       setError(result.error || 'Credenciais inválidas. Verifique seu e-mail e senha.');
       return;

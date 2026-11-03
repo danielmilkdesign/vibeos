@@ -16,7 +16,10 @@ import {
   Calendar,
   ChevronRight
 } from 'lucide-react';
-import { getStoredData, setStoredData } from '../../lib/crm-store';
+import { useCrmCollection } from '../../lib/crm-client';
+import { Project } from '../../types/crm';
+import { toggleProjectTask, reconcileProject } from '../../lib/operations-domain';
+import { useAuth } from '../../lib/auth-context';
 
 interface Tarefa {
   id: string;
@@ -34,24 +37,41 @@ interface Tarefa {
 const TAREFAS_INICIAIS: Tarefa[] = [];
 
 export default function TarefasPage() {
-  const [tarefas, setTarefas] = useState<Tarefa[]>(() =>
-    getStoredData('vibe_tarefas_ui', TAREFAS_INICIAIS)
-  );
+  const { user } = useAuth();
+  const [projects, saveAsync, { loading, error }] = useCrmCollection<Project[]>('vibe_projects', []);
+  const [actionError, setActionError] = useState('');
+  const tarefas = projects.flatMap(p => (p.tasks || []).map(t => ({
+    id: t.id, projectId: p.id, titulo: t.title, projeto: p.projectType, cliente: p.nomeEmpresa,
+    responsavel: t.assignedTo, prazo: t.dueDate, prioridade: t.priority || 'MEDIA',
+    status: t.completed ? 'CONCLUIDA' : t.status || 'A_FAZER', aguardandoCliente: t.status === 'AGUARDANDO_CLIENTE',
+    diasAtraso: !t.completed && /^\d{4}-\d{2}-\d{2}/.test(t.dueDate) ? Math.max(0, Math.floor((Date.now() - Date.parse(t.dueDate + 'T23:59:59')) / 86400000)) : 0
+  })));
   const [viewMode, setViewMode] = useState<'MINHAS' | 'TODAS' | 'ATRASADAS'>('TODAS');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [prioridadeFilter, setPrioridadeFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [projectId, setProjectId] = useState('');
+  const [title, setTitle] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [busy, setBusy] = useState(false);
+  const createTask = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy || loading || !user) return;
+    if (!title.trim() || !projects.some(p => p.id === projectId)) { setActionError('Selecione um projeto e informe a tarefa.'); return; }
+    setActionError(''); setBusy(true);
+    const task = { id: crypto.randomUUID(), projectId, title: title.trim(), assignedTo: user.name, dueDate, completed: false, status: 'A_FAZER' as const };
+    try {
+      await saveAsync(projects.map(p => p.id === projectId ? reconcileProject({...p, tasks: [...(p.tasks || []), task]}) : p));
+      setCreating(false); setTitle(''); setDueDate('');
+    } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao criar tarefa.'); }
+    finally { setBusy(false); }
+  };
 
-  const toggleTaskConcluida = (id: string) => {
-    const updated = tarefas.map(t => {
-      if (t.id === id) {
-        const nextStatus: Tarefa['status'] = t.status === 'CONCLUIDA' ? 'A_FAZER' : 'CONCLUIDA';
-        return { ...t, status: nextStatus };
-      }
-      return t;
-    });
-    setTarefas(updated);
-    setStoredData('vibe_tarefas_ui', updated);
+  const toggleTaskConcluida = async (projectId: string, id: string) => {
+    setActionError('');
+    try { await saveAsync(toggleProjectTask(projects, projectId, id)); }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao salvar tarefa.'); }
   };
 
   const filteredTarefas = tarefas.filter((t) => {
@@ -67,6 +87,8 @@ export default function TarefasPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {loading && <p role="status">Carregando tarefas…</p>}
+      {(error || actionError) && <p role="alert" className="text-rose-400">{String(error || actionError)}</p>}
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -84,11 +106,19 @@ export default function TarefasPage() {
           </p>
         </div>
 
-        <button className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-600/25">
+        <button disabled={loading || busy} onClick={() => setCreating(true)} className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-600/25">
           <Plus className="w-4 h-4" /> Nova Tarefa
         </button>
       </div>
 
+      {creating && <form onSubmit={createTask} className="space-y-3 rounded-xl bg-slate-900 border border-slate-800 p-4 text-sm text-slate-200">
+        <h2 className="font-semibold">Nova tarefa de projeto</h2>
+        <select required aria-label="Projeto da tarefa" value={projectId} onChange={e => setProjectId(e.target.value)} className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Selecione um projeto</option>{projects.map(p => <option key={p.id} value={p.id}>{p.nomeEmpresa} — {p.projectType}</option>)}</select>
+        <input required aria-label="Título da tarefa" value={title} onChange={e => setTitle(e.target.value)} placeholder="Título da tarefa" className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" />
+        <label className="block">Prazo (opcional)<input type="date" aria-label="Prazo da tarefa" value={dueDate} onChange={e => setDueDate(e.target.value)} className="block rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" /></label>
+        <button disabled={busy} className="rounded-lg bg-cyan-600 px-4 py-2 focus-visible:ring-2 focus-visible:ring-offset-2">Salvar tarefa</button>
+        <button type="button" disabled={busy} onClick={() => setCreating(false)} className="px-4 py-2 focus-visible:ring-2 focus-visible:ring-offset-2">Cancelar</button>
+      </form>}
       {/* View Selector & Search Filter Bar */}
       <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl space-y-4">
         <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-slate-800 pb-3">
@@ -169,7 +199,8 @@ export default function TarefasPage() {
             >
               <div className="flex items-start gap-3 flex-1">
                 <button
-                  onClick={() => toggleTaskConcluida(t.id)}
+                  aria-label={`Alternar conclusão de ${t.titulo}`}
+                  onClick={() => toggleTaskConcluida(t.projectId, t.id)}
                   className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
                     t.status === 'CONCLUIDA'
                       ? 'bg-emerald-600 border-emerald-500 text-white'

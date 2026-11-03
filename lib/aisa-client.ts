@@ -1,129 +1,40 @@
-/**
- * AIsa API Client Wrapper - VIBE OS
- * Implementation of the 4-Step Lifecycle:
- * 1. SEARCH -> 2. SCHEMA -> 3. QUOTE -> 4. USE
- */
-
+/** AIsa lifecycle wrapper. Quotes are estimates, never executed enrichment. */
 export interface AisaConfig {
   apiKey: string;
   baseUrl?: string;
 }
-
 export class AisaClient {
   private apiKey: string;
   private baseUrl: string;
-
   constructor(config?: Partial<AisaConfig>) {
     this.apiKey = config?.apiKey || process.env.AISA_API_KEY || '';
     this.baseUrl = config?.baseUrl || 'https://tools.aisa.one/mcp';
-
-    if (!this.apiKey) {
-      console.warn('[VIBE OS - AIsa Warning]: AISA_API_KEY not configured.');
-    }
   }
-
-  private get headers() {
-    return {
-      'Content-Type': 'application/json',
-      'AISA_API_KEY': this.apiKey,
-      'Authorization': `Bearer ${this.apiKey}`
-    };
-  }
-
-  /**
-   * Step 1: Search Tool
-   */
-  async searchTool(query: string, domain?: string) {
+  private async call(path: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    if (!this.apiKey) return {success: false, error: 'AIsa não configurada.'};
     try {
-      const res = await fetch(`${this.baseUrl}/search`, {
+      const res = await fetch(`${this.baseUrl}/${path}`, {
         method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({ query, domain })
+        headers: {'Content-Type': 'application/json', 'AISA_API_KEY': this.apiKey, Authorization: `Bearer ${this.apiKey}`},
+        body: JSON.stringify(payload), signal: AbortSignal.timeout(18000),
       });
-      return await res.json();
-    } catch (err) {
-      console.error('[AIsa Search Error]:', err);
-      return { success: false, error: String(err) };
-    }
+      if (!res.ok) return {success: false, error: 'O provedor AIsa não concluiu a solicitação.'};
+      const result: unknown = await res.json();
+      if (!result || typeof result !== 'object' || Array.isArray(result)) return {success: false, error: 'Resposta inválida do provedor AIsa.'};
+      return result as Record<string, unknown>;
+    } catch { return {success: false, error: 'Não foi possível consultar o provedor AIsa.'}; }
   }
-
-  /**
-   * Step 2: Get Schema
-   */
-  async getSchema(toolName: string) {
-    try {
-      const res = await fetch(`${this.baseUrl}/schema`, {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({ tool_name: toolName })
-      });
-      return await res.json();
-    } catch (err) {
-      console.error('[AIsa Schema Error]:', err);
-      return { success: false, error: String(err) };
-    }
-  }
-
-  /**
-   * Step 3: Quote Tool Usage
-   */
-  async quoteUsage(toolName: string, params: Record<string, any>) {
-    try {
-      const res = await fetch(`${this.baseUrl}/quote`, {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({ tool_name: toolName, params })
-      });
-      return await res.json();
-    } catch (err) {
-      console.error('[AIsa Quote Error]:', err);
-      return { success: false, error: String(err) };
-    }
-  }
-
-  /**
-   * Step 4: Execute Tool Usage
-   */
-  async executeTool(toolName: string, params: Record<string, any>, quoteId?: string) {
-    try {
-      const res = await fetch(`${this.baseUrl}/use`, {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({ tool_name: toolName, params, quote_id: quoteId })
-      });
-      return await res.json();
-    } catch (err) {
-      console.error('[AIsa Execute Error]:', err);
-      return { success: false, error: String(err) };
-    }
-  }
-
-  /**
-   * Helper: Enrich Lead via DataForSEO, Semrush, Similarweb, and Apollo
-   */
+  async searchTool(query: string, domain?: string) { return this.call('search', {query, domain}); }
+  async getSchema(toolName: string) { return this.call('schema', {tool_name: toolName}); }
+  async quoteUsage(toolName: string, params: Record<string, unknown>) { return this.call('quote', {tool_name: toolName, params}); }
+  async executeTool(toolName: string, params: Record<string, unknown>, quoteId?: string) { return this.call('use', {tool_name: toolName, params, quote_id: quoteId}); }
   async enrichLeadData(companyName: string, domainOrLink: string, city = 'Manaus') {
-    console.log(`[AIsa Growth Engine] Enriching data for ${companyName} (${city})...`);
-
-    // 1. DataForSEO query
-    const dataForSeoQuote = await this.quoteUsage('dataforseo_maps', { keyword: `${companyName} ${city}` });
-    
-    // 2. Semrush query
-    const semrushQuote = await this.quoteUsage('semrush_domain_rank', { domain: domainOrLink });
-
-    // 3. Similarweb query
-    const similarwebQuote = await this.quoteUsage('similarweb_traffic', { domain: domainOrLink });
-
-    // 4. Apollo query
-    const apolloQuote = await this.quoteUsage('apollo_people_search', { company_name: companyName, location: city });
-
-    return {
-      status: 'QUOTED_AND_READY',
-      quotes: {
-        dataforseo: dataForSeoQuote,
-        semrush: semrushQuote,
-        similarweb: similarwebQuote,
-        apollo: apolloQuote
-      }
+    const quotes = {
+      dataforseo: await this.quoteUsage('dataforseo_maps', {keyword: `${companyName} ${city}`}),
+      semrush: await this.quoteUsage('semrush_domain_rank', {domain: domainOrLink}),
+      similarweb: await this.quoteUsage('similarweb_traffic', {domain: domainOrLink}),
+      apollo: await this.quoteUsage('apollo_people_search', {company_name: companyName, location: city}),
     };
+    return {status: Object.values(quotes).some(quote => quote.success !== true) ? 'QUOTE_FAILED' : 'QUOTED_NOT_EXECUTED', quotes, executed: false, metrics: null};
   }
 }

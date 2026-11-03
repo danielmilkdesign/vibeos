@@ -16,15 +16,28 @@ import {
   ShieldCheck,
   Sparkles
 } from 'lucide-react';
-import { getStoredData, setStoredData } from '../../lib/crm-store';
-import { INITIAL_COMPANIES } from '../../lib/crm-initial-data';
+import { useCrmCollection } from '../../lib/crm-client';
+import { useAuth } from '../../lib/auth-context';
+import { normalizePhone } from '../../lib/lead-normalization';
+import { useSearchParams } from 'next/navigation';
 import { Company, NichoEnum } from '../../types/crm';
 
-export default function EmpresasPage() {
-  const [companies, setCompanies] = useState<Company[]>(() =>
-    getStoredData('vibe_companies', INITIAL_COMPANIES)
-  );
-  const [searchTerm, setSearchTerm] = useState('');
+function EmpresasContent() {
+  const { user } = useAuth();
+  const [companies, saveAsync, { loading, error }] = useCrmCollection<Company[]>('vibe_companies', []);
+  const [actionError, setActionError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const persist = async (next: Company[]) => {
+    setActionError(''); setBusy(true);
+    try { await saveAsync(next); return true; }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao salvar. Tente novamente.'); return false; }
+    finally { setBusy(false); }
+  };
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get('search') || '';
+  const [searchInput, setSearchInput] = useState<{ source: string; value: string } | null>(null);
+  const searchTerm = searchInput?.source === urlSearch ? searchInput.value : urlSearch;
+  const setSearchTerm = (value: string) => setSearchInput({ source: urlSearch, value });
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New Company form
@@ -43,33 +56,34 @@ export default function EmpresasPage() {
     (c.decisorName && c.decisorName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleCreateCompany = (e: React.FormEvent) => {
+  const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    if (!name.trim() || busy || loading) return;
+    const phone = normalizePhone(whatsapp);
+    if (whatsapp.trim() && !phone) { setActionError('Informe telefone internacional válido.'); return; }
 
     const newComp: Company = {
-      id: `comp-${Date.now()}`,
+      id: crypto.randomUUID(),
       name,
       tradeName: tradeName || name,
       nicho,
       city,
       state: 'AM',
       website: website || undefined,
-      whatsapp: whatsapp || '(92) 99202-7059',
-      decisorName: decisorName || 'Decisor a confirmar',
-      decisorRole: decisorRole || 'Proprietário(a)',
-      decisorPhone: whatsapp || '(92) 99202-7059',
-      decisorEmail: 'contato@vibe.tech',
+      whatsapp: phone || '',
+      decisorName: decisorName.trim(),
+      decisorRole: decisorRole.trim(),
+      decisorPhone: phone || '',
+      decisorEmail: '',
       isClient: false,
       mrr: 0,
       health: 'SAUDAVEL',
-      ownerName: 'Victor Belichar',
+      ownerName: user?.name || '',
       createdAt: new Date().toISOString()
     };
 
     const updated = [newComp, ...companies];
-    setCompanies(updated);
-    setStoredData('vibe_companies', updated);
+    if (!await persist(updated)) return;
     setIsModalOpen(false);
     setName('');
     setTradeName('');
@@ -80,6 +94,8 @@ export default function EmpresasPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {loading && <p role="status">Carregando registros…</p>}
+      {(error || actionError) && <p role="alert" className="text-rose-400">{String(error || actionError)}</p>}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -216,6 +232,7 @@ export default function EmpresasPage() {
             </div>
 
             <form onSubmit={handleCreateCompany} className="space-y-3">
+              {actionError && <p role="alert" className="text-rose-400">{actionError}</p>}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Nome da Empresa / Razão Social</label>
                 <input
@@ -311,4 +328,8 @@ export default function EmpresasPage() {
       )}
     </div>
   );
+}
+
+export default function EmpresasPage() {
+  return <React.Suspense fallback={<p role="status" className="p-6 text-slate-300">Carregando empresas…</p>}><EmpresasContent /></React.Suspense>;
 }

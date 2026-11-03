@@ -15,7 +15,10 @@ import {
   Plus,
   ArrowUpRight
 } from 'lucide-react';
-import { getStoredData, setStoredData } from '../../lib/crm-store';
+import { useCrmCollection } from '../../lib/crm-client';
+import { Deliverable, Company, Project, Contract } from '../../types/crm';
+import { useAuth } from '../../lib/auth-context';
+type LinkedDelivery = Deliverable & { projectId?: string; companyId?: string };
 
 interface Entrega {
   id: string;
@@ -33,11 +36,37 @@ interface Entrega {
 const ENTREGAS_INICIAIS: Entrega[] = [];
 
 export default function EntregasPage() {
-  const [entregas, setEntregas] = useState<Entrega[]>(() =>
-    getStoredData('vibe_entregas_ui', ENTREGAS_INICIAIS)
-  );
+  const { user } = useAuth();
+  const [deliverables, saveAsync, { loading, error }] = useCrmCollection<LinkedDelivery[]>('vibe_deliverables', []);
+  const [companies] = useCrmCollection<Company[]>('vibe_companies', []);
+  const [projects] = useCrmCollection<Project[]>('vibe_projects', []);
+  const [contracts] = useCrmCollection<Contract[]>('vibe_contracts', []);
+  const [actionError, setActionError] = useState('');
+  const entregas = deliverables.map(d => ({id: d.id, cliente: d.companyName, titulo: d.title, tipo: d.type,
+    ciclo: d.cycleMonth, responsavel: d.assignedTo, prazo: d.dueDate, status: d.status,
+    arquivoUrl: d.fileUrl, comentarioCliente: d.feedbackClient }));
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editing, setEditing] = useState<LinkedDelivery | null>(null);
+  const [busy, setBusy] = useState(false);
+  const persist = async (next: LinkedDelivery[]) => {
+    setActionError(''); setBusy(true);
+    try { await saveAsync(next); return true; }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Falha ao salvar entrega.'); return false; }
+    finally { setBusy(false); }
+  };
+  const saveDelivery = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editing || busy || loading) return;
+    const company = companies.find(c => c.id === editing.companyId);
+    if (!company || !editing.title.trim() || !editing.cycleMonth || !editing.dueDate) { setActionError('Informe título, empresa, ciclo e prazo.'); return; }
+    if (editing.projectId && !projects.some(p => p.id === editing.projectId && p.companyId === company.id)) { setActionError('Projeto deve pertencer à empresa.'); return; }
+    if (editing.contractId && !contracts.some(c => c.id === editing.contractId && c.companyId === company.id)) { setActionError('Contrato deve pertencer à empresa.'); return; }
+    if (editing.fileUrl) { try { if (!['http:','https:'].includes(new URL(editing.fileUrl).protocol)) throw Error(); } catch { setActionError('URL do arquivo deve ser HTTP(S).'); return; } }
+    if (['ENVIADA_CLIENTE','APROVADA','PUBLICADA'].includes(editing.status) && !editing.fileUrl?.trim()) { setActionError('Registre o link real do arquivo antes deste status.'); return; }
+    const next = {...editing, title: editing.title.trim(), companyName: company.name};
+    if (await persist([...deliverables.filter(d => d.id !== editing.id), next])) setEditing(null);
+  };
 
   const filteredEntregas = entregas.filter((e) => {
     const matchesStatus = statusFilter === 'ALL' || e.status === statusFilter;
@@ -47,14 +76,14 @@ export default function EntregasPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const getStatusBadge = (status: Entrega['status']) => {
+  const getStatusBadge = (status: Deliverable['status']) => {
     switch (status) {
       case 'APROVADA':
       case 'PUBLICADA':
         return 'bg-emerald-950/70 border-emerald-800 text-emerald-400';
-      case 'APROVACAO_CLIENTE':
+      case 'ENVIADA_CLIENTE':
         return 'bg-amber-950/70 border-amber-800 text-amber-300 animate-pulse';
-      case 'AJUSTES':
+      case 'AJUSTES_SOLICITADOS':
         return 'bg-rose-950/70 border-rose-800 text-rose-300';
       default:
         return 'bg-slate-900 border-slate-800 text-slate-300';
@@ -63,6 +92,8 @@ export default function EntregasPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {loading && <p role="status">Carregando entregas…</p>}
+      {(error || actionError) && <p role="alert" className="text-rose-400">{String(error || actionError)}</p>}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -80,11 +111,28 @@ export default function EntregasPage() {
           </p>
         </div>
 
-        <button className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-600/25">
+        <button disabled={loading || busy} onClick={() => setEditing({id: crypto.randomUUID(), title: '', companyName: '', companyId: '', projectId: '', contractId: '', type: 'LANDING_PAGE', cycleMonth: '', dueDate: '', assignedTo: user?.name || '', status: 'PLANEJADA', createdAt: new Date().toISOString()})} className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-600/25">
           <Plus className="w-4 h-4" /> Nova Entrega no Ciclo
         </button>
       </div>
 
+      {editing && <form onSubmit={saveDelivery} className="space-y-3 rounded-xl bg-slate-900 border border-slate-800 p-4 text-sm text-slate-200">
+        <h2 className="font-semibold">Entrega — dados, vínculo e status</h2>
+        <input required aria-label="Título da entrega" value={editing.title} onChange={e => setEditing({...editing, title: e.target.value})} className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" />
+        <select required aria-label="Empresa da entrega" value={editing.companyId || ''} onChange={e => setEditing({...editing, companyId: e.target.value, projectId: '', contractId: ''})} className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Selecione a empresa</option>{companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+        <select aria-label="Projeto da entrega" value={editing.projectId || ''} onChange={e => setEditing({...editing, projectId: e.target.value})} className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Sem projeto (opcional)</option>{projects.filter(p => p.companyId === editing.companyId).map(p => <option key={p.id} value={p.id}>{p.nomeEmpresa} — {p.projectType}</option>)}</select>
+        <select aria-label="Contrato da entrega" value={editing.contractId || ''} onChange={e => setEditing({...editing, contractId: e.target.value})} className="w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2"><option value="">Sem contrato (opcional)</option>{contracts.filter(c => c.companyId === editing.companyId).map(c => <option key={c.id} value={c.id}>{c.contractNumber}</option>)}</select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label>Ciclo<input required type="month" aria-label="Ciclo da entrega" value={editing.cycleMonth} onChange={e => setEditing({...editing, cycleMonth: e.target.value})} className="block w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" /></label>
+          <label>Prazo<input required type="date" aria-label="Prazo da entrega" value={editing.dueDate} onChange={e => setEditing({...editing, dueDate: e.target.value})} className="block w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" /></label>
+        </div>
+        <select aria-label="Tipo da entrega" value={editing.type} onChange={e => setEditing({...editing, type: e.target.value as Deliverable['type']})} className="rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2">{['ARTE_REDES','CARROSSEL','REELS_VIDEO','LANDING_PAGE','EBOOK','ANUNCIO'].map(v => <option key={v}>{v}</option>)}</select>
+        <select aria-label="Status da entrega" value={editing.status} onChange={e => setEditing({...editing, status: e.target.value as Deliverable['status']})} className="rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2">{['PLANEJADA','EM_PRODUCAO','REVISAO_INTERNA','ENVIADA_CLIENTE','AJUSTES_SOLICITADOS','APROVADA','PUBLICADA'].map(v => <option key={v}>{v}</option>)}</select>
+        <label className="block">Link real do arquivo (não fazemos upload)<input type="url" aria-label="URL do arquivo" value={editing.fileUrl || ''} onChange={e => setEditing({...editing, fileUrl: e.target.value})} className="block w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" /></label>
+        <label className="block">Feedback registrado do cliente<textarea aria-label="Feedback do cliente" value={editing.feedbackClient || ''} onChange={e => setEditing({...editing, feedbackClient: e.target.value})} className="block w-full rounded-lg bg-slate-950 border border-slate-700 p-2 focus-visible:ring-2 focus-visible:ring-offset-2" /></label>
+        <button disabled={busy} className="rounded-lg bg-cyan-600 px-4 py-2 focus-visible:ring-2 focus-visible:ring-offset-2">Salvar entrega</button>
+        <button type="button" disabled={busy} onClick={() => setEditing(null)} className="px-4 py-2 focus-visible:ring-2 focus-visible:ring-offset-2">Cancelar</button>
+      </form>}
       {/* Cycle usage progress card */}
       <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="space-y-1 w-full md:w-auto">
@@ -150,8 +198,8 @@ export default function EntregasPage() {
             <option value="PLANEJADA">Planejada</option>
             <option value="EM_PRODUCAO">Em Produção</option>
             <option value="REVISAO_INTERNA">Revisão Interna</option>
-            <option value="APROVACAO_CLIENTE">Aprovação Cliente</option>
-            <option value="AJUSTES">Ajustes</option>
+            <option value="ENVIADA_CLIENTE">Enviada ao cliente</option>
+            <option value="AJUSTES_SOLICITADOS">Ajustes solicitados</option>
             <option value="APROVADA">Aprovada</option>
             <option value="PUBLICADA">Publicada</option>
           </select>
@@ -209,10 +257,14 @@ export default function EntregasPage() {
                     Ver Arquivo <ArrowUpRight className="w-3.5 h-3.5" />
                   </a>
                 ) : (
-                  <button className="text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1">
-                    <Upload className="w-3.5 h-3.5" /> Anexar Peça
+                  <button onClick={() => setEditing(deliverables.find(d => d.id === item.id) || null)} className="text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1">
+                    <FileText className="w-3.5 h-3.5" /> Informar link
                   </button>
                 )}
+              </div>
+              <div className="flex gap-3 text-xs">
+                <button disabled={busy} onClick={() => setEditing(deliverables.find(d => d.id === item.id) || null)} className="text-cyan-400 focus-visible:ring-2 focus-visible:ring-offset-2">Editar / alterar status</button>
+                <button disabled={busy} onClick={async () => { if (window.confirm('Excluir esta entrega?')) await persist(deliverables.filter(d => d.id !== item.id)); }} className="text-rose-400 focus-visible:ring-2 focus-visible:ring-offset-2">Excluir entrega</button>
               </div>
             </div>
           ))}
